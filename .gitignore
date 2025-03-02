@@ -1,3 +1,6 @@
 # project binaries
 symnmf
-symnmf.o
+*.o
+
+# c api package
+symnmfmodule.cpython*
