@@ -64,11 +64,14 @@ int parse_file(const char *filename, int *d, int *N, struct datapoint **datapoin
     struct coord *first_coord = NULL;
     struct coord **curr_coord = NULL;
 
+    FILE *file = fopen(filename, "r");
+    GOTO_CLEANUP_IF_NULL(file);
+
     /* go over first line to get d */
     first_coord = NULL;
     curr_coord = &first_coord;
     do {
-        scanf("%lf%c", &n, &delim);
+        fscanf(file, "%lf%c", &n, &delim);
         if (SUCCESS != init_coord(curr_coord, n)) {
             return ERROR;
         }
@@ -86,7 +89,7 @@ int parse_file(const char *filename, int *d, int *N, struct datapoint **datapoin
     /* go over the rest of the lines to get datapoints and N */
     first_coord = NULL;
     curr_coord = &first_coord;
-    while (scanf("%lf%c", &n, &delim) == 2) {
+    while (fscanf(file, "%lf%c", &n, &delim) == 2) {
         if (SUCCESS != init_coord(curr_coord, n)) {
             return ERROR;
         }
@@ -103,6 +106,10 @@ int parse_file(const char *filename, int *d, int *N, struct datapoint **datapoin
         }
     }
 
+cleanup:
+    if (file != NULL) {
+        fclose(file);
+    }
     return SUCCESS;
 }
 
