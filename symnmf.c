@@ -199,9 +199,9 @@ double** linked_list_to_2D_array(datapoint* point, int N, int d){
     return a;
 }
 
-double** sym(coord** datapoint_coords, int N, int d) {
+double** sym(double** datapoint_coords, int N, int d) {
     int i, j; /* TODO: ask if initing more than 1 per line is allowed */
-    double** arr = malloc(N*N*sizeof(double));
+    double* arr = malloc(N*N*sizeof(double));
     double** mat = malloc(N*sizeof(double*));
     
     for (i=0; i<N; i++) {
@@ -237,14 +237,14 @@ double** _ddg(double** mat, int N) {
     return mat;
 }
 
-double** ddg(coord** datapoint_coords, int N, int d) {
+double** ddg(double** datapoint_coords, int N, int d) {
     double** A = sym(datapoint_coords, N, d);
     double** D = _ddg(A, N);
 
     return D;
 };
 
-double** norm(coord** datapoint_coords, int N, int d) {
+double** norm(double** datapoint_coords, int N, int d) {
     double** A = sym(datapoint_coords, N, d);
     double** D = _ddg(A, N);
     
