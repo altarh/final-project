@@ -187,13 +187,47 @@ double** ddg(double** datapoint_coords, int N, int d) {
     double** A = sym(datapoint_coords, N, d);
     double** D = _ddg(A, N);
 
+    /* TODO: free A */
+
     return D;
 };
+
+double** _mat_pow(double** mat, int N) {
+    int i,j; /* TODO: ask if initing more than 1 per line is allowed */
+    
+    for (i=0; i<N; i++) {
+        for (j=0; j<N; j++) {
+            mat[i][j] = pow(mat[i][j], -0.5);
+        }
+    }
+
+    return mat;
+}
+
+double** _mat_dot(double** A, double** B, int N) {
+    int i,j,k; /* TODO: ask if initing more than 1 per line is allowed */
+    double* arr = calloc(N*N, sizeof(double));
+    double** mat = malloc(N*sizeof(double*));
+
+    for (i=0; i<N; i++) {
+        mat[i] = arr + (i*N);
+        for (j=0; j<N; j++) {
+            for (k=0; k<N; k++) {
+                mat[i][j] += A[i][k] * B[k][j];
+            }
+        }
+    }
+
+    return mat;
+}
 
 double** norm(double** datapoint_coords, int N, int d) {
     double** A = sym(datapoint_coords, N, d);
     double** D = _ddg(A, N);
-    
+    D = _mat_pow(D, -0.5);
+    double** W = _mat_dot(_mat_dot(D, A, N), D, N);
+
+    return W;
 };
 
 void free_coords(struct coord *coord) {
