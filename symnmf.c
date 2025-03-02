@@ -164,7 +164,7 @@ double** sym(double** datapoint_coords, int N, int d) {
     }
 
     return mat;
-};
+}
 
 double** _ddg(double** mat, int N) {
     int i,j; /* TODO: ask if initing more than 1 per line is allowed */
@@ -190,7 +190,7 @@ double** ddg(double** datapoint_coords, int N, int d) {
     /* TODO: free A */
 
     return D;
-};
+}
 
 double** _mat_pow(double** mat, int N) {
     int i,j; /* TODO: ask if initing more than 1 per line is allowed */
@@ -224,11 +224,12 @@ double** _mat_dot(double** A, double** B, int N) {
 double** norm(double** datapoint_coords, int N, int d) {
     double** A = sym(datapoint_coords, N, d);
     double** D = _ddg(A, N);
+    double** W;
     D = _mat_pow(D, -0.5);
-    double** W = _mat_dot(_mat_dot(D, A, N), D, N);
+    W = _mat_dot(_mat_dot(D, A, N), D, N);
 
     return W;
-};
+}
 
 void free_coords(struct coord *coord) {
     struct coord *curr_coord = coord;
@@ -272,6 +273,13 @@ int main(int argc, char *argv[]) {
     char *filename;
     struct datapoint *datapoints = NULL;
 
+    /* sym, ddg, norm tests */
+    double** datapoint_coords;
+    double** sym_mat;
+    double** ddg_mat;
+    double** norm_mat;
+    int i,j;
+
     if (argc != 3) {
         printf("An Error Has Occurred\n");
         return ERROR;
@@ -282,6 +290,48 @@ int main(int argc, char *argv[]) {
 
     printf("Running %s with input %s\n", goal, filename);
     parse_file(filename, &d, &N, &datapoints);
+
+    datapoint_coords = linked_list_to_2D_array(datapoints, N, d);
+    /* sym test */
+    sym_mat = sym(datapoint_coords, N, d);
+    for (i=0; i<N; i++) {
+        for (j=0; j<N; j++) {
+            printf("%.4f", sym_mat[i][j]);
+            if (j == N-1) {
+                printf("\n");
+            }
+            else {
+                printf(", ");
+            }
+        }
+    }
+    /* ddg test */
+    ddg_mat = ddg(datapoint_coords, N, d);
+    for (i=0; i<N; i++) {
+        for (j=0; j<N; j++) {
+            printf("%.4f", ddg_mat[i][j]);
+            if (j == N-1) {
+                printf("\n");
+            }
+            else {
+                printf(", ");
+            }
+        }
+    }
+    /* norm test */
+    norm_mat = norm(datapoint_coords, N, d);
+    for (i=0; i<N; i++) {
+        for (j=0; j<N; j++) {
+            printf("%.4f", ddg_mat[i][j]);
+            if (j == N-1) {
+                printf("\n");
+            }
+            else {
+                printf(", ");
+            }
+        }
+    }
+
     free_all(datapoints);
 
     return SUCCESS;
