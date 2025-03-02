@@ -2,6 +2,16 @@
 #include <stdlib.h>
 #include <string.h>
 
+double** crate_similarity_matrix(){};
+
+double** crate_diagonal_matrix(){};
+
+double** crate_normalized_similarity_matrix(){};
+
+double** crate_optimized_H(){};
+
+
+
 int main(int argc, char *argv[]) {
     /* Variable declarations must be first */
     char *goal;
