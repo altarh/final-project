@@ -18,19 +18,19 @@ typedef struct centroid {
     struct coord *centroid_coords;
     struct coord *sum;
     int count;
-}centroid;
+} centroid;
 
 typedef struct coord
 {
     double coord;
     struct coord *next;
-}coord;
+} coord;
 
 typedef struct datapoint
 {
     struct coord *coords;
     struct datapoint *next;
-}datapoint;
+} datapoint;
 
 /* internal funcs for read_args */
 int init_datapoint(struct datapoint **datapoint, struct coord *first_coord) {
@@ -196,6 +196,40 @@ double** norm(double** datapoint_coords, int N, int d) {
     
 };
 
+void free_coords(struct coord *coord) {
+    struct coord *curr_coord = coord;
+    while (curr_coord != NULL) {
+        struct coord *next_coord = curr_coord->next;
+        free(curr_coord);
+        curr_coord = next_coord;
+    }
+}
+
+void free_all(struct datapoint *datapoints) {
+    struct datapoint *curr_datapoint;
+    struct datapoint *next_datapoint;
+
+    curr_datapoint = datapoints;
+    while (curr_datapoint != NULL) {
+        next_datapoint = curr_datapoint->next;
+        free_coords(curr_datapoint->coords);
+        free(curr_datapoint);
+        curr_datapoint = next_datapoint;
+    }
+}
+
+/* TODO: for debugging, remove */
+void print_datapoints(struct datapoint *datapoints) {
+    while (datapoints) {
+        struct coord *current_coord = datapoints->coords;
+        while (current_coord) {
+            printf("  %.4f", current_coord->coord);
+            current_coord = current_coord->next;
+        }
+        printf("\n");
+        datapoints = datapoints->next;
+    }
+}
 
 int main(int argc, char *argv[]) {
     int d = 0;
@@ -214,19 +248,7 @@ int main(int argc, char *argv[]) {
 
     printf("Running %s with input %s\n", goal, filename);
     parse_file(filename, &d, &N, &datapoints);
+    free_all(datapoints);
 
     return SUCCESS;
-}
-
-/* TODO: for debugging, remove */
-void print_datapoints(struct datapoint *datapoints) {
-    while (datapoints) {
-        struct coord *current_coord = datapoints->coords;
-        while (current_coord) {
-            printf("  %.4f", current_coord->coord);
-            current_coord = current_coord->next;
-        }
-        printf("\n");
-        datapoints = datapoints->next;
-    }
 }
