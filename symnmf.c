@@ -13,23 +13,23 @@ const char *GENERIC_ERROR_MSG = "An Error Has Occurred\n";
 const char *INVALID_K_ERROR_MSG = "Invalid number of clusters!\n";
 const char *INVALID_ITER_ERROR_MSG = "Invalid maximum iteration!\n";
 
-struct centroid {
+typedef struct centroid {
     struct coord *centroid_coords;
     struct coord *sum;
     int count;
-};
+}centroid;
 
-struct coord
+typedef struct coord
 {
     double coord;
     struct coord *next;
-};
+}coord;
 
-struct datapoint
+typedef struct datapoint
 {
     struct coord *coords;
     struct datapoint *next;
-};
+}datapoint;
 
 /* internal funcs for read_args */
 int init_datapoint(struct datapoint **datapoint, struct coord *first_coord) {
@@ -179,7 +179,10 @@ double calc_euclidean_distance(struct coord *coord1, struct coord *coord2, int d
     return sqrt(sum);
 }
 
-double** linked_list_to_array(){};
+double** linked_list_to_array(datapoint* dpoint){
+    coord* crd = dpoint->coords
+    
+};
 
 double** crate_similarity_matrix(){};
 
