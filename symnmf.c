@@ -123,10 +123,27 @@ double calc_euclidean_distance(double *coord1, double *coord2, int d){
     return sqrt(sum);
 }
 
-double** linked_list_to_array(datapoint* dpoint){
-    coord* crd = dpoint->coords
-    
-};
+double** linked_list_to_2D_array(datapoint* point, int N, int d){
+    int i, j;
+    double *p;
+    double **a;
+    coord* coord1 = point->coords;
+
+    p = calloc(d * N, sizeof(double));
+    a = calloc(d, sizeof(double *));
+
+    for (i = 0; i < N; i++) {
+        a[i] = p + (i * d);
+        for (j = 0; j < d; j++) {
+            a[i][j] = coord1->coord;
+            coord1 = coord1->next;
+        }
+        point = point->next;
+        coord1 = point->coords;
+    }
+
+    return a;
+}
 
 double** sym(coord** datapoint_coords, int N, int d) {
     int i, j; /* TODO: ask if initing more than 1 per line is allowed */
