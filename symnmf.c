@@ -6,12 +6,13 @@
 const int SUCCESS = 0;
 const int ERROR = 1;
 
-const double EPSILON = 0.001;
-const int DEFAULT_ITER = 200;
+const int DEFAULT_ITER = 300;
+
+#define GOTO_CLEANUP_IF_NULL(x) { if (x == NULL) { goto cleanup; } }
+#define GOTO_CLEANUP_IF_NEGATIVE(x) { if (x < 0) { goto cleanup; } }
+#define GOTO_CLEANUP_IF_PYERROR_OCCURED() { if (NULL != PyErr_Occurred()) { goto cleanup; } }
 
 const char *GENERIC_ERROR_MSG = "An Error Has Occurred\n";
-const char *INVALID_K_ERROR_MSG = "Invalid number of clusters!\n";
-const char *INVALID_ITER_ERROR_MSG = "Invalid maximum iteration!\n";
 
 struct centroid {
     struct coord *centroid_coords;
@@ -56,7 +57,7 @@ int init_coord(struct coord **coord, double n) {
     return SUCCESS;
 }
 
-int parse_file(int *d, int *N, struct datapoint **datapoints) {
+int parse_file(const char *filename, int *d, int *N, struct datapoint **datapoints) {
     double n; /* for the double values */
     char delim; /* commas, \n, ... */
     struct datapoint **curr_datapoint = datapoints;
@@ -130,43 +131,6 @@ int parse_integer(char *src, int *dest) {
     return SUCCESS;
 }
 
-/* parse the args (K, iter and the datapoints) */
-int read_args(int argc, char *argv[], int *K, int *iter, int *d, int *N, struct datapoint **datapoints) {
-    /* Read arguments - argc should be 2 if there is not iter arg, 3 if there is */
-    if (argc < 2 || argc > 3) {
-        printf("%s", GENERIC_ERROR_MSG);
-        return ERROR;
-    }
-
-    /* read and validate iter, if given */
-    if (argc == 3) {
-        if (SUCCESS != parse_integer(argv[2], iter) || *iter <= 1 || *iter >= 1000) {
-            printf("%s", INVALID_ITER_ERROR_MSG);
-            return ERROR;
-        }
-    }
-
-    /* read and validate K from below */
-    if (SUCCESS != parse_integer(argv[1], K) || *K <= 1) {
-        printf("%s", INVALID_K_ERROR_MSG);
-        return ERROR;
-    }
-
-    /* parses datapoints from file and obtains d and N */
-    if (SUCCESS != parse_file(d, N, datapoints)) {
-        printf("%s", GENERIC_ERROR_MSG);
-        return ERROR;
-    }
-
-    /* validate K from above */
-    if (*K >= *N) {
-        printf("%s", INVALID_K_ERROR_MSG);
-        return ERROR;
-    }
-
-    return SUCCESS;
-}
-
 double calc_euclidean_distance(struct coord *coord1, struct coord *coord2, int d){
     double sum = 0;
     int i;
@@ -190,8 +154,11 @@ double** crate_optimized_H(){};
 
 
 int main(int argc, char *argv[]) {
+    int d = 0;
+    int N = 0;
     char *goal;
     char *filename;
+    struct datapoint *datapoints = NULL;
 
     if (argc != 3) {
         printf("An Error Has Occurred\n");
@@ -202,6 +169,7 @@ int main(int argc, char *argv[]) {
     filename = argv[2];
 
     printf("Running %s with input %s\n", goal, filename);
+    parse_file(filename, &d, &N, &datapoints);
 
     return SUCCESS;
 }
