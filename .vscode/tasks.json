@@ -7,6 +7,10 @@
             "args": [
                 "-fdiagnostics-color=always",
                 "-g",
+                "-ansi",
+                "-Wextra",
+                "-Werror",
+                "-pedantic-errors",
                 "${file}",
                 "-o",
                 "${fileDirname}/${fileBasenameNoExtension}",
