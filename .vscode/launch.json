@@ -5,7 +5,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${fileDirname}/${fileBasenameNoExtension}",
-            "args": [ "sym", "./tests/input_1_10.txt" ],
+            "args": [ "norm", "./tests/input_1_10.txt" ],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
             "environment": [],
