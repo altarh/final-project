@@ -127,19 +127,19 @@ double** linked_list_to_2D_array(datapoint* point, int N, int d){
     int i, j;
     double *p;
     double **a;
-    coord* coord1 = point->coords;
+    coord* coord1;
 
     p = calloc(d * N, sizeof(double));
-    a = calloc(d, sizeof(double *));
+    a = calloc(N, sizeof(double *));
 
     for (i = 0; i < N; i++) {
+        coord1 = point->coords;
         a[i] = p + (i * d);
         for (j = 0; j < d; j++) {
             a[i][j] = coord1->coord;
             coord1 = coord1->next;
         }
         point = point->next;
-        coord1 = point->coords;
     }
 
     return a;
