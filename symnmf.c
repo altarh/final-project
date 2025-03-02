@@ -164,7 +164,7 @@ double** sym(double** datapoint_coords, int N, int d) {
     }
 
     return mat;
-};
+}
 
 double** _ddg(double** mat, int N) {
     int i,j; /* TODO: ask if initing more than 1 per line is allowed */
@@ -188,13 +188,13 @@ double** ddg(double** datapoint_coords, int N, int d) {
     double** D = _ddg(A, N);
 
     return D;
-};
+}
 
 double** norm(double** datapoint_coords, int N, int d) {
     double** A = sym(datapoint_coords, N, d);
     double** D = _ddg(A, N);
     
-};
+}
 
 void free_coords(struct coord *coord) {
     struct coord *curr_coord = coord;
