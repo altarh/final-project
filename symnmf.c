@@ -292,43 +292,22 @@ int main(int argc, char *argv[]) {
 
     if (strcmp(goal, "sym") == 0) {
         result = sym(datapoints, N, d);
-        for (i=0; i<N; i++) {
-            for (j=0; j<N; j++) {
-                printf("%.4f", result[i][j]);
-                if (j == N-1) {
-                    printf("\n");
-                }
-                else {
-                    printf(", ");
-                }
-            }
-        }
     }
     else if (strcmp(goal, "ddg") == 0) {
         result = ddg(datapoints, N, d);
-        for (i=0; i<N; i++) {
-            for (j=0; j<N; j++) {
-                printf("%.4f", result[i][j]);
-                if (j == N-1) {
-                    printf("\n");
-                }
-                else {
-                    printf(", ");
-                }
-            }
-        }
     }
     else if (strcmp(goal, "norm") == 0) {
         result = norm(datapoints, N, d);
-        for (i=0; i<N; i++) {
-            for (j=0; j<N; j++) {
-                printf("%.4f", result[i][j]);
-                if (j == N-1) {
-                    printf("\n");
-                }
-                else {
-                    printf(", ");
-                }
+    }
+
+    for (i=0; i<N; i++) {
+        for (j=0; j<N; j++) {
+            printf("%.4f", result[i][j]);
+            if (j == N-1) {
+                printf("\n");
+            }
+            else {
+                printf(", ");
             }
         }
     }
