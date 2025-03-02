@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+double** linked_list_to_array(){};
+
 double** crate_similarity_matrix(){};
 
 double** crate_diagonal_matrix(){};
