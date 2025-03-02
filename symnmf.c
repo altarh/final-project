@@ -240,7 +240,7 @@ void free_coords(struct coord *coord) {
     }
 }
 
-void free_all(struct datapoint *datapoints) {
+void free_datapoints_structs(struct datapoint *datapoints) {
     struct datapoint *curr_datapoint;
     struct datapoint *next_datapoint;
 
@@ -253,17 +253,9 @@ void free_all(struct datapoint *datapoints) {
     }
 }
 
-/* TODO: for debugging, remove */
-void print_datapoints(struct datapoint *datapoints) {
-    while (datapoints) {
-        struct coord *current_coord = datapoints->coords;
-        while (current_coord) {
-            printf("  %.4f", current_coord->coord);
-            current_coord = current_coord->next;
-        }
-        printf("\n");
-        datapoints = datapoints->next;
-    }
+void free_2D_array(double **array) {
+    free(array[0]);
+    free(array);
 }
 
 double** parse(const char *filename, int *d, int *N) {
@@ -272,7 +264,7 @@ double** parse(const char *filename, int *d, int *N) {
 
     parse_file(filename, d, N, &datapoints);
     datapoints_array = linked_list_to_2D_array(datapoints, *N, *d);
-    free_all(datapoints);
+    free_datapoints_structs(datapoints);
 
     return datapoints_array;
 }
@@ -284,13 +276,6 @@ int main(int argc, char *argv[]) {
     char *filename;
     double **result = NULL;
     double **datapoints = NULL;
-
-    /* sym, ddg, norm tests */
-    double** datapoint_coords;
-    double** sym_mat;
-    double** ddg_mat;
-    double** norm_mat;
-    int i,j;
 
     if (argc != 3) {
         printf("An Error Has Occurred\n");
@@ -314,6 +299,7 @@ int main(int argc, char *argv[]) {
         result = norm(datapoints, N, d);
     }
 
-    free(datapoints);
+    (void)result;  /* TODO: do something with result */
+    free_2D_array(datapoints);
     return SUCCESS;
 }
