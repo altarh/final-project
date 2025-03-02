@@ -179,10 +179,16 @@ double calc_euclidean_distance(struct coord *coord1, struct coord *coord2, int d
     return sqrt(sum);
 }
 
-double** linked_list_to_array(datapoint* dpoint){
-    coord* crd = dpoint->coords
-    
-};
+coord** linked_list_to_array(datapoint* point, int N){
+    int i;
+    coord** arr;
+
+    for (i = 0; i < N; i++){
+        arr[i] = point->coords;
+        point = point->next;
+    }
+    return arr;
+}
 
 double** crate_similarity_matrix(){};
 
