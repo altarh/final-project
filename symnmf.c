@@ -231,12 +231,24 @@ void print_datapoints(struct datapoint *datapoints) {
     }
 }
 
+double** parse(const char *filename, int *d, int *N) {
+    struct datapoint *datapoints = NULL;
+    double **datapoints_array = NULL;
+
+    parse_file(filename, d, N, &datapoints);
+    datapoints_array = linked_list_to_2D_array(datapoints, *N, *d);
+    free_all(datapoints);
+
+    return datapoints_array;
+}
+
 int main(int argc, char *argv[]) {
     int d = 0;
     int N = 0;
     char *goal;
     char *filename;
-    struct datapoint *datapoints = NULL;
+    double **result = NULL;
+    double **datapoints = NULL;
 
     if (argc != 3) {
         printf("An Error Has Occurred\n");
@@ -247,8 +259,19 @@ int main(int argc, char *argv[]) {
     filename = argv[2];
 
     printf("Running %s with input %s\n", goal, filename);
-    parse_file(filename, &d, &N, &datapoints);
-    free_all(datapoints);
 
+    datapoints = parse(filename, &d, &N);
+
+    if (strcmp(goal, "sym") == 0) {
+        result = sym(datapoints, N, d);
+    }
+    else if (strcmp(goal, "ddg") == 0) {
+        result = ddg(datapoints, N, d);
+    }
+    else if (strcmp(goal, "norm") == 0) {
+        result = norm(datapoints, N, d);
+    }
+
+    free(datapoints);
     return SUCCESS;
 }
