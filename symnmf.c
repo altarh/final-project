@@ -113,31 +113,6 @@ cleanup:
     return SUCCESS;
 }
 
-int parse_integer(char *src, int *dest) {
-    int n = 0;
-    int chars_read = 0;
-    int amount_parsed = 0;
-
-    amount_parsed = sscanf(src, "%d%n", &n, &chars_read);
-    if (amount_parsed != 1 || src[chars_read] != '\0') {
-        /* failed to parse integer, or trailing characters found */
-        if (src[chars_read] == '.') {
-            char *trail_string = src + (chars_read + 1);
-            int trail = 0;
-            int trail_chars_read = 0;
-            amount_parsed = sscanf(trail_string, "%d%n", &trail, &trail_chars_read);
-            if (!trail && amount_parsed <= 1 && !trail_string[trail_chars_read]) {
-                *dest = n;
-                return SUCCESS;
-            }
-        }
-        return ERROR;
-    }
-
-    *dest = n;
-    return SUCCESS;
-}
-
 double calc_euclidean_distance(struct coord *coord1, struct coord *coord2, int d){
     double sum = 0;
     int i;
@@ -179,4 +154,17 @@ int main(int argc, char *argv[]) {
     parse_file(filename, &d, &N, &datapoints);
 
     return SUCCESS;
+}
+
+/* TODO: for debugging, remove */
+void print_datapoints(struct datapoint *datapoints) {
+    while (datapoints) {
+        struct coord *current_coord = datapoints->coords;
+        while (current_coord) {
+            printf("  %.4f", current_coord->coord);
+            current_coord = current_coord->next;
+        }
+        printf("\n");
+        datapoints = datapoints->next;
+    }
 }
