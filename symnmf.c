@@ -14,23 +14,23 @@ const int DEFAULT_ITER = 300;
 
 const char *GENERIC_ERROR_MSG = "An Error Has Occurred\n";
 
-struct centroid {
+typedef struct centroid {
     struct coord *centroid_coords;
     struct coord *sum;
     int count;
-};
+}centroid;
 
-struct coord
+typedef struct coord
 {
     double coord;
     struct coord *next;
-};
+}coord;
 
-struct datapoint
+typedef struct datapoint
 {
     struct coord *coords;
     struct datapoint *next;
-};
+}datapoint;
 
 /* internal funcs for read_args */
 int init_datapoint(struct datapoint **datapoint, struct coord *first_coord) {
@@ -113,26 +113,71 @@ cleanup:
     return SUCCESS;
 }
 
-double calc_euclidean_distance(struct coord *coord1, struct coord *coord2, int d){
+double calc_euclidean_distance(double *coord1, double *coord2, int d){
     double sum = 0;
     int i;
 
     for (i = 0; i < d; i++){
-        sum += pow((coord1->coord - coord2->coord), 2);
-        coord1 = coord1->next;
-        coord2 = coord2->next;
+        sum += pow((coord1[i] - coord2[i]), 2);
     }
     return sqrt(sum);
 }
 
-double** crate_similarity_matrix(){};
+double** linked_list_to_array(datapoint* dpoint){
+    coord* crd = dpoint->coords
+    
+};
 
-double** crate_diagonal_matrix(){};
+double** sym(coord** datapoint_coords, int N, int d) {
+    int i, j; /* TODO: ask if initing more than 1 per line is allowed */
+    double** arr = malloc(N*N*sizeof(double));
+    double** mat = malloc(N*sizeof(double*));
+    
+    for (i=0; i<N; i++) {
+        mat[i] = arr + (i*N);
+        for (j=0; j<N; j++) {
+            if (i == j) {
+                mat[i][j] = 0;
+            }
+            else {
+                double dist = calc_euclidean_distance(datapoint_coords[i], datapoint_coords[j], d);
+                mat[i][j] = exp(-dist/2);
+            }
+        }
+    }
 
-double** crate_normalized_similarity_matrix(){};
+    return mat;
+};
 
-double** crate_optimized_H(){};
+double** _ddg(double** mat, int N) {
+    int i,j; /* TODO: ask if initing more than 1 per line is allowed */
+    int d = 0;
 
+    for (i=0; i<N; i++) {
+        for (j=0; j<N; j++) {
+            d += mat[i][j];
+            if (i != j) {
+                mat[i][j] = 0;
+            }
+        }
+        mat[i][i] = d;
+    }
+
+    return mat;
+}
+
+double** ddg(coord** datapoint_coords, int N, int d) {
+    double** A = sym(datapoint_coords, N, d);
+    double** D = _ddg(A, N);
+
+    return D;
+};
+
+double** norm(coord** datapoint_coords, int N, int d) {
+    double** A = sym(datapoint_coords, N, d);
+    double** D = _ddg(A, N);
+    
+};
 
 
 int main(int argc, char *argv[]) {
