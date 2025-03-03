@@ -204,28 +204,29 @@ double** sym(double** datapoint_coords, int N, int d) {
     return mat;
 }
 
-double** _ddg(double** mat, int N) {
+double** _ddg(double** A, int N) {
     int i,j; /* TODO: ask if initing more than 1 per line is allowed */
-    double d = 0;
+    double d;
+    double* arr = calloc(N*N, sizeof(double));
+    double** D = malloc(N*sizeof(double*));
 
     for (i=0; i<N; i++) {
+        D[i] = arr + i*N;
+        d = 0;
         for (j=0; j<N; j++) {
-            d += mat[i][j];
-            if (i != j) {
-                mat[i][j] = 0;
-            }
+            d += A[i][j];
         }
-        mat[i][i] = d;
+        D[i][i] = d;
     }
 
-    return mat;
+    return D;
 }
 
 double** ddg(double** datapoint_coords, int N, int d) {
     double** A = sym(datapoint_coords, N, d);
     double** D = _ddg(A, N);
 
-    /* TODO: free A */
+    free_2D_array(A);
 
     return D;
 }
@@ -261,32 +262,48 @@ double** _mat_dot(double** A, double** B, int N) {
     return mat;
 }
 
+void print_mat(double** mat, int N) {
+    int i,j;
+
+    for (i=0; i<N; i++) {
+        for (j=0; j<N; j++) {
+            printf("%.4f", mat[i][j]);
+            if (j == N-1) {
+                printf("\n");
+            }
+            else {
+                printf(",");
+            }
+        }
+    }
+}
+
 double** norm(double** datapoint_coords, int N, int d) {
     double** A = sym(datapoint_coords, N, d);
     double** D = _ddg(A, N);
-    double** W;
-    double ** temp;
+    double** W_; /* D^(-0.5)*A */
+    double** W; /* D^(-0.5)*A*D^(-0.5) */
     D = _mat_pow(D, N);
-    temp = _mat_dot(D, A, N);
-    W = _mat_dot(temp, D, N);
+    W_ = _mat_dot(D, A, N);
+    W = _mat_dot(W_, D, N);
+
+    free_2D_array(W_);
 
     /* A become D (in place) so no need to free A. */
     free_2D_array(D);
-    free_2D_array(temp);
     return W;
 }
 
 int main(int argc, char *argv[]) {
     int d = 0;
     int N = 0;
-    int i,j; 
     char *goal;
     char *filename;
     double **result = NULL;
     double **datapoints = NULL;
 
     if (argc != 3) {
-        printf("An Error Has Occurred\n");
+        printf("%s", GENERIC_ERROR_MSG);
         return ERROR;
     }
 
@@ -307,19 +324,9 @@ int main(int argc, char *argv[]) {
         result = norm(datapoints, N, d);
     }
 
-    for (i=0; i<N; i++) {
-        for (j=0; j<N; j++) {
-            printf("%.4f", result[i][j]);
-            if (j == N-1) {
-                printf("\n");
-            }
-            else {
-                printf(", ");
-            }
-        }
-    }
+    print_mat(result, N);
 
-    free_2D_array(result);
     free_2D_array(datapoints);
+    free_2D_array(result);
     return SUCCESS;
 }
