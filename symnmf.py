@@ -1,6 +1,7 @@
 import sys
 import pandas as pd
 import numpy as np
+from numpy import inf
  
 import symnmfmodule
 
@@ -30,7 +31,7 @@ def symnmf(H, W):
     '''
     epsilon = 1e-4
     iteration = 0
-    diff_sum = 1 # initial squared norm to allow first iteration
+    diff_sum = inf # initial squared norm to allow first iteration
     while (diff_sum > epsilon and iteration < 300):
         prevH = H
         H = update_H(W, H)
