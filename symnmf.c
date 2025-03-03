@@ -262,6 +262,21 @@ double** _mat_dot(double** A, double** B, int N) {
     return mat;
 }
 
+double** norm(double** datapoint_coords, int N, int d) {
+    double** A = sym(datapoint_coords, N, d);
+    double** D = _ddg(A, N);
+    double** W_; /* D^(-0.5)*A */
+    double** W; /* D^(-0.5)*A*D^(-0.5) */
+    D = _mat_pow(D, N);
+    W_ = _mat_dot(D, A, N);
+    W = _mat_dot(W_, D, N);
+
+    free_2D_array(A);
+    free_2D_array(D);
+    free_2D_array(W_);
+    return W;
+}
+
 void print_mat(double** mat, int N) {
     int i,j;
 
@@ -276,22 +291,6 @@ void print_mat(double** mat, int N) {
             }
         }
     }
-}
-
-double** norm(double** datapoint_coords, int N, int d) {
-    double** A = sym(datapoint_coords, N, d);
-    double** D = _ddg(A, N);
-    double** W_; /* D^(-0.5)*A */
-    double** W; /* D^(-0.5)*A*D^(-0.5) */
-    D = _mat_pow(D, N);
-    W_ = _mat_dot(D, A, N);
-    W = _mat_dot(W_, D, N);
-
-    free_2D_array(W_);
-
-    /* A become D (in place) so no need to free A. */
-    free_2D_array(D);
-    return W;
 }
 
 int main(int argc, char *argv[]) {
@@ -310,7 +309,7 @@ int main(int argc, char *argv[]) {
     goal = argv[1];
     filename = argv[2];
 
-    printf("Running %s with input %s\n", goal, filename);
+    printf("Running %s with input %s\n", goal, filename); /* TODO: remove */
 
     datapoints = parse(filename, &d, &N);
 
