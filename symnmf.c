@@ -69,12 +69,9 @@ int parse_file(const char *filename, int *d, int *N, datapoint **datapoints) {
     datapoint **curr_datapoint = datapoints;
     coord *first_coord = NULL;
     coord **curr_coord = NULL;
-
     FILE *file = fopen(filename, "r");
     GOTO_CLEANUP_IF_NULL(file);
 
-    /* go over first line to get d */
-    first_coord = NULL;
     curr_coord = &first_coord;
     do {
         fscanf(file, "%lf%c", &n, &delim);
@@ -83,18 +80,15 @@ int parse_file(const char *filename, int *d, int *N, datapoint **datapoints) {
         (*d)++;
     } while (delim != '\n');
 
-    /* initialize the first datapoint */
     GOTO_CLEANUP_IF_ERROR(init_datapoint(curr_datapoint, first_coord));
     curr_datapoint = &(*curr_datapoint)->next;
     (*N)++;
 
-    /* go over the rest of the lines to get datapoints and N */
     first_coord = NULL;
     curr_coord = &first_coord;
     while (fscanf(file, "%lf%c", &n, &delim) == 2) {
         GOTO_CLEANUP_IF_ERROR(init_coord(curr_coord, n));
         curr_coord = &(*curr_coord)->next;
-
         if (delim == '\n') { /* if at the end of the line */
             GOTO_CLEANUP_IF_ERROR(init_datapoint(curr_datapoint, first_coord));
             curr_datapoint = &(*curr_datapoint)->next;
@@ -103,13 +97,10 @@ int parse_file(const char *filename, int *d, int *N, datapoint **datapoints) {
             (*N)++;
         }
     }
-
     return_code = SUCCESS;
-
 cleanup:
-    if (file != NULL) {
+    if (file != NULL)
         fclose(file);
-    }
     return return_code;
 }
 
@@ -157,9 +148,9 @@ int linked_list_to_2D_array(datapoint* point, int N, int d, double ***result){
     int i;
     int j;
     int return_code = ERROR;
-    double *p;
-    double **a;
-    coord* coord1;
+    double *p = NULL;
+    double **a = NULL;
+    coord* coord1 = NULL;
 
     p = calloc(d * N, sizeof(double));
     GOTO_CLEANUP_IF_NULL(p);
