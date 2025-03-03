@@ -41,7 +41,7 @@ def symnmf(H, W):
 def load_datapoints(filename):
     '''Load datapoints from given text file into 2D ndarray.'''
     datapoints = pd.read_csv(filename, sep=",", header=None)
-    return datapoints.to_numpy()
+    return datapoints.values.tolist()
 
 def print_mat(mat):
     '''Print given 2D array-like, comma-delimited.'''
@@ -78,4 +78,3 @@ if __name__ == "__main__":
         main()
     except Exception:
         print_error()
-        raise
