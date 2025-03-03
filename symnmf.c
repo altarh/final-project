@@ -241,14 +241,10 @@ int sym_C(double** datapoint_coords, int N, int d, double ***result) {
     
     for (i=0; i<N; i++) {
         A[i] = arr + (i*N);
+        A[i][i] = 0;
         for (j=i+1; j<N; j++) {
-            if (i == j) {
-                A[i][j] = 0;
-            }
-            else {
-                double dist = calc_euclidean_distance(datapoint_coords[i], datapoint_coords[j], d);
-                A[i][j] = exp(-dist/2);
-            }
+            double dist = calc_euclidean_distance(datapoint_coords[i], datapoint_coords[j], d);
+            A[i][j] = exp(-dist/2);
             arr[j*N+i] = A[i][j]; /* symmetry between A[j][i] (=arr[j*N+i]) and A[i][j] */
         }
     }
