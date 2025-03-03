@@ -7,6 +7,7 @@ const int SUCCESS = 0;
 const int ERROR = 1;
 
 #define GOTO_CLEANUP_IF_NULL(x) { if (x == NULL) { goto cleanup; } }
+#define GOTO_CLEANUP_IF_ERROR(x) { if (x == ERROR) { goto cleanup; } }
 #define GOTO_CLEANUP_IF_NEGATIVE(x) { if (x < 0) { goto cleanup; } }
 
 const char *GENERIC_ERROR_MSG = "An Error Has Occurred\n";
@@ -55,6 +56,7 @@ int init_coord(struct coord **coord, double n) {
 }
 
 int parse_file(const char *filename, int *d, int *N, struct datapoint **datapoints) {
+    int return_code = ERROR;
     double n; /* for the double values */
     char delim; /* commas, \n, ... */
     struct datapoint **curr_datapoint = datapoints;
@@ -69,17 +71,13 @@ int parse_file(const char *filename, int *d, int *N, struct datapoint **datapoin
     curr_coord = &first_coord;
     do {
         fscanf(file, "%lf%c", &n, &delim);
-        if (SUCCESS != init_coord(curr_coord, n)) {
-            return ERROR;
-        }
+        GOTO_CLEANUP_IF_ERROR(init_coord(curr_coord, n));
         curr_coord = &(*curr_coord)->next;
         (*d)++;
     } while (delim != '\n');
 
     /* initialize the first datapoint */
-    if (SUCCESS != init_datapoint(curr_datapoint, first_coord)) {
-        return ERROR;
-    }
+    GOTO_CLEANUP_IF_ERROR(init_datapoint(curr_datapoint, first_coord));
     curr_datapoint = &(*curr_datapoint)->next;
     (*N)++;
 
@@ -87,15 +85,11 @@ int parse_file(const char *filename, int *d, int *N, struct datapoint **datapoin
     first_coord = NULL;
     curr_coord = &first_coord;
     while (fscanf(file, "%lf%c", &n, &delim) == 2) {
-        if (SUCCESS != init_coord(curr_coord, n)) {
-            return ERROR;
-        }
+        GOTO_CLEANUP_IF_ERROR(init_coord(curr_coord, n));
         curr_coord = &(*curr_coord)->next;
 
         if (delim == '\n') { /* if at the end of the line */
-            if (SUCCESS != init_datapoint(curr_datapoint, first_coord)) {
-                return ERROR;
-            }
+            GOTO_CLEANUP_IF_ERROR(init_datapoint(curr_datapoint, first_coord));
             curr_datapoint = &(*curr_datapoint)->next;
             first_coord = NULL;
             curr_coord = &first_coord;
@@ -103,11 +97,13 @@ int parse_file(const char *filename, int *d, int *N, struct datapoint **datapoin
         }
     }
 
+    return_code = SUCCESS;
+
 cleanup:
     if (file != NULL) {
         fclose(file);
     }
-    return SUCCESS;
+    return return_code;
 }
 
 void free_coords(struct coord *coord) {
@@ -133,8 +129,10 @@ void free_datapoints_structs(struct datapoint *datapoints) {
 }
 
 void free_2D_array(double **array) {
-    free(array[0]);
-    free(array);
+    if (array != NULL) {
+        free(array[0]);
+        free(array);
+    }
 }
 
 double** linked_list_to_2D_array(datapoint* point, int N, int d){
@@ -159,15 +157,19 @@ double** linked_list_to_2D_array(datapoint* point, int N, int d){
     return a;
 }
 
-double** parse(const char *filename, int *d, int *N) {
+int parse(const char *filename, int *d, int *N, double ***datapoints_array) {
+    int return_code = ERROR;
     struct datapoint *datapoints = NULL;
-    double **datapoints_array = NULL;
 
-    parse_file(filename, d, N, &datapoints);
-    datapoints_array = linked_list_to_2D_array(datapoints, *N, *d);
+    GOTO_CLEANUP_IF_ERROR(parse_file(filename, d, N, &datapoints));
+
+    *datapoints_array = linked_list_to_2D_array(datapoints, *N, *d);
+    return_code = SUCCESS;
+
+cleanup:
     free_datapoints_structs(datapoints);
 
-    return datapoints_array;
+    return return_code;
 }
 
 double calc_euclidean_distance(double *coord1, double *coord2, int d){
@@ -291,6 +293,7 @@ void print_mat(double** mat, int N) {
 }
 
 int main(int argc, char *argv[]) {
+    int return_code = ERROR;
     int d = 0;
     int N = 0;
     char *goal;
@@ -299,8 +302,7 @@ int main(int argc, char *argv[]) {
     double **datapoints = NULL;
 
     if (argc != 3) {
-        printf("%s", GENERIC_ERROR_MSG);
-        return ERROR;
+        goto cleanup;
     }
 
     goal = argv[1];
@@ -308,7 +310,7 @@ int main(int argc, char *argv[]) {
 
     printf("Running %s with input %s\n", goal, filename); /* TODO: remove */
 
-    datapoints = parse(filename, &d, &N);
+    GOTO_CLEANUP_IF_ERROR(parse(filename, &d, &N, &datapoints));
 
     if (strcmp(goal, "sym") == 0) {
         result = sym(datapoints, N, d);
@@ -320,9 +322,14 @@ int main(int argc, char *argv[]) {
         result = norm(datapoints, N, d);
     }
 
+    return_code = SUCCESS;
     print_mat(result, N);
 
+cleanup:
     free_2D_array(datapoints);
     free_2D_array(result);
-    return SUCCESS;
+    if (return_code == ERROR) {
+        printf("%s", GENERIC_ERROR_MSG);
+    }
+    return return_code;
 }
