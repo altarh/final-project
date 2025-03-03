@@ -1,6 +1,8 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 
+#define GOTO_CLEANUP_IF_PYERROR_OCCURED() { if (NULL != PyErr_Occurred()) { goto cleanup; } }
+
 static PyObject* symnmf(PyObject *self, PyObject *args);
 static PyObject* sym(PyObject *self, PyObject *args);
 static PyObject* ddg(PyObject *self, PyObject *args);
