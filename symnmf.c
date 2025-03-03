@@ -127,22 +127,27 @@ double** linked_list_to_2D_array(datapoint* point, int N, int d){
     int i, j;
     double *p;
     double **a;
-    coord* coord1 = point->coords;
+    coord* coord1;
 
     p = calloc(d * N, sizeof(double));
-    a = calloc(d, sizeof(double *));
+    a = calloc(N, sizeof(double *));
 
     for (i = 0; i < N; i++) {
+        coord1 = point->coords;
         a[i] = p + (i * d);
         for (j = 0; j < d; j++) {
             a[i][j] = coord1->coord;
             coord1 = coord1->next;
         }
         point = point->next;
-        coord1 = point->coords;
     }
 
     return a;
+}
+
+void free_2D_array(double **array) {
+    free(array[0]);
+    free(array);
 }
 
 double** sym(double** datapoint_coords, int N, int d) {
@@ -166,34 +171,92 @@ double** sym(double** datapoint_coords, int N, int d) {
     return mat;
 }
 
-double** _ddg(double** mat, int N) {
+double** _ddg(double** A, int N) {
     int i,j; /* TODO: ask if initing more than 1 per line is allowed */
-    int d = 0;
+    double d;
+    double* arr = calloc(N*N, sizeof(double));
+    double** D = malloc(N*sizeof(double*));
 
     for (i=0; i<N; i++) {
+        D[i] = arr + i*N;
+        d = 0;
         for (j=0; j<N; j++) {
-            d += mat[i][j];
-            if (i != j) {
-                mat[i][j] = 0;
-            }
+            d += A[i][j];
         }
-        mat[i][i] = d;
+        D[i][i] = d;
     }
 
-    return mat;
+    return D;
 }
 
 double** ddg(double** datapoint_coords, int N, int d) {
     double** A = sym(datapoint_coords, N, d);
     double** D = _ddg(A, N);
 
+    free_2D_array(A);
+
     return D;
+}
+
+double** _mat_pow(double** mat, int N) {
+    int i,j; /* TODO: ask if initing more than 1 per line is allowed */
+    
+    for (i=0; i<N; i++) {
+        for (j=0; j<N; j++) {
+            if (mat[i][j] != 0) {
+                mat[i][j] = pow(mat[i][j], -0.5);
+            }
+        }
+    }
+
+    return mat;
+}
+
+double** _mat_dot(double** A, double** B, int N) {
+    int i,j,k; /* TODO: ask if initing more than 1 per line is allowed */
+    double* arr = calloc(N*N, sizeof(double));
+    double** mat = malloc(N*sizeof(double*));
+
+    for (i=0; i<N; i++) {
+        mat[i] = arr + (i*N);
+        for (j=0; j<N; j++) {
+            for (k=0; k<N; k++) {
+                mat[i][j] += A[i][k] * B[k][j];
+            }
+        }
+    }
+
+    return mat;
+}
+
+void print_mat(double** mat, int N) {
+    int i,j;
+
+    for (i=0; i<N; i++) {
+        for (j=0; j<N; j++) {
+            printf("%.4f", mat[i][j]);
+            if (j == N-1) {
+                printf("\n");
+            }
+            else {
+                printf(",");
+            }
+        }
+    }
 }
 
 double** norm(double** datapoint_coords, int N, int d) {
     double** A = sym(datapoint_coords, N, d);
     double** D = _ddg(A, N);
-    
+    double** W_; /* D^(-0.5)*A */
+    double** W; /* D^(-0.5)*A*D^(-0.5) */
+    D = _mat_pow(D, N);
+    W_ = _mat_dot(D, A, N);
+    W = _mat_dot(W_, D, N);
+
+    free_2D_array(W_);
+
+    return W;
 }
 
 void free_coords(struct coord *coord) {
@@ -205,7 +268,7 @@ void free_coords(struct coord *coord) {
     }
 }
 
-void free_all(struct datapoint *datapoints) {
+void free_datapoints_structs(struct datapoint *datapoints) {
     struct datapoint *curr_datapoint;
     struct datapoint *next_datapoint;
 
@@ -218,17 +281,15 @@ void free_all(struct datapoint *datapoints) {
     }
 }
 
-/* TODO: for debugging, remove */
-void print_datapoints(struct datapoint *datapoints) {
-    while (datapoints) {
-        struct coord *current_coord = datapoints->coords;
-        while (current_coord) {
-            printf("  %.4f", current_coord->coord);
-            current_coord = current_coord->next;
-        }
-        printf("\n");
-        datapoints = datapoints->next;
-    }
+double** parse(const char *filename, int *d, int *N) {
+    struct datapoint *datapoints = NULL;
+    double **datapoints_array = NULL;
+
+    parse_file(filename, d, N, &datapoints);
+    datapoints_array = linked_list_to_2D_array(datapoints, *N, *d);
+    free_datapoints_structs(datapoints);
+
+    return datapoints_array;
 }
 
 int main(int argc, char *argv[]) {
@@ -236,10 +297,11 @@ int main(int argc, char *argv[]) {
     int N = 0;
     char *goal;
     char *filename;
-    struct datapoint *datapoints = NULL;
+    double **result = NULL;
+    double **datapoints = NULL;
 
     if (argc != 3) {
-        printf("An Error Has Occurred\n");
+        printf("%s", GENERIC_ERROR_MSG);
         return ERROR;
     }
 
@@ -247,8 +309,22 @@ int main(int argc, char *argv[]) {
     filename = argv[2];
 
     printf("Running %s with input %s\n", goal, filename);
-    parse_file(filename, &d, &N, &datapoints);
-    free_all(datapoints);
 
+    datapoints = parse(filename, &d, &N);
+
+    if (strcmp(goal, "sym") == 0) {
+        result = sym(datapoints, N, d);
+    }
+    else if (strcmp(goal, "ddg") == 0) {
+        result = ddg(datapoints, N, d);
+    }
+    else if (strcmp(goal, "norm") == 0) {
+        result = norm(datapoints, N, d);
+    }
+
+    print_mat(result, N);
+
+    free_2D_array(datapoints);
+    free_2D_array(result);
     return SUCCESS;
 }
