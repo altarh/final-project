@@ -336,14 +336,18 @@ cleanup:
     return return_code;
 }
 
-double** _mat_pow(double** mat, int N) {
+/**
+ * Calculates D^(-0.5) for the normalized similarity matrix (in-place).
+ *
+ * @param D The diagonal degree matrix.
+ * @param N The number of rows and columns in D.
+ */
+void _D_pow(double** D, int N) {
     int i;
     
     for (i=0; i<N; i++) {
-        mat[i][i] = pow(mat[i][i], -0.5);
+        D[i][i] = pow(D[i][i], -0.5);
     }
-
-    return mat;
 }
 
 /**
@@ -401,13 +405,13 @@ int norm(double** datapoint_coords, int N, int d, double ***result) {
     int return_code = ERROR;
     double** A = NULL;
     double** D = NULL;
-    double** W_ = NULL; /* D^(-0.5)*A */
-    double** W = NULL; /* D^(-0.5)*A*D^(-0.5) */
+    double** W_ = NULL; /* will be: D^(-0.5)*A */
+    double** W = NULL; /* will be: W_*D^(-0.5) = D^(-0.5)*A*D^(-0.5) */
 
     GOTO_CLEANUP_IF_ERROR(sym(datapoint_coords, N, d, &A));
     GOTO_CLEANUP_IF_ERROR(_ddg(A, N, &D));
 
-    D = _mat_pow(D, N);
+    _D_pow(D, N); /* D = D^(-0.5) */
     GOTO_CLEANUP_IF_ERROR(_mat_dot(D, A, N, &W_));
     GOTO_CLEANUP_IF_ERROR(_mat_dot(W_, D, N, &W));
 
@@ -428,7 +432,8 @@ cleanup:
 
 /* Prints a matrix to the console. */
 void print_mat(double** mat, int N) {
-    int i,j;
+    int i;
+    int j;
 
     for (i=0; i<N; i++) {
         for (j=0; j<N; j++) {
@@ -469,6 +474,9 @@ int main(int argc, char *argv[]) {
     }
     else if (strcmp(goal, "norm") == 0) {
         GOTO_CLEANUP_IF_ERROR(norm(datapoints, N, d, &result));
+    }
+    else { /* invalid goal */
+        goto cleanup;
     }
 
     return_code = SUCCESS;

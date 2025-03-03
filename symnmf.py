@@ -87,18 +87,14 @@ def main():
 
     if goal == "sym":
         result = sym(datapoints)
-        pass
     elif goal == "ddg":
         result = ddg(datapoints)
-        pass
     elif goal == "norm":
         result = norm(datapoints)
-        pass
     elif goal == "symnmf":
         W = norm(datapoints)
         H0 = initialize_H(W, N, k)
         result = symnmf(H0, W)
-        pass
     else: # invalid goal
         raise Exception()
     
