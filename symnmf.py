@@ -1,6 +1,7 @@
 import sys
 import pandas as pd
 import numpy as np
+np.random.seed(1234)
 
 # TODO: remove, just for testing and comparisons with C ------------------------------
 from math import exp
@@ -74,8 +75,6 @@ def print_mat(mat):
         print(",".join(["%.4f" % val for val in row]))
 
 def main():
-    np.random.seed(1234)
-
     k = int(sys.argv[1])
     goal, filename = sys.argv[2:]
 
