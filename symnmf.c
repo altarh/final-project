@@ -132,17 +132,22 @@ void free_2D_array(double **array) {
     if (array != NULL) {
         free(array[0]);
         free(array);
+        array = NULL;
     }
 }
 
-double** linked_list_to_2D_array(datapoint* point, int N, int d){
-    int i, j;
+int linked_list_to_2D_array(datapoint* point, int N, int d, double ***result){
+    int i;
+    int j;
+    int return_code = ERROR;
     double *p;
     double **a;
     coord* coord1;
 
     p = calloc(d * N, sizeof(double));
+    GOTO_CLEANUP_IF_NULL(p);
     a = calloc(N, sizeof(double *));
+    GOTO_CLEANUP_IF_NULL(a);
 
     for (i = 0; i < N; i++) {
         coord1 = point->coords;
@@ -154,7 +159,15 @@ double** linked_list_to_2D_array(datapoint* point, int N, int d){
         point = point->next;
     }
 
-    return a;
+    return_code = SUCCESS;
+    *result = a;
+
+cleanup:
+    if (return_code == ERROR) {
+        /* try to free memory */
+        free_2D_array(a);
+    }
+    return return_code;
 }
 
 int parse(const char *filename, int *d, int *N, double ***datapoints_array) {
@@ -162,8 +175,7 @@ int parse(const char *filename, int *d, int *N, double ***datapoints_array) {
     struct datapoint *datapoints = NULL;
 
     GOTO_CLEANUP_IF_ERROR(parse_file(filename, d, N, &datapoints));
-
-    *datapoints_array = linked_list_to_2D_array(datapoints, *N, *d);
+    GOTO_CLEANUP_IF_ERROR(linked_list_to_2D_array(datapoints, *N, *d, datapoints_array));
     return_code = SUCCESS;
 
 cleanup:
@@ -182,10 +194,15 @@ double calc_euclidean_distance(double *coord1, double *coord2, int d){
     return sqrt(sum);
 }
 
-double** sym(double** datapoint_coords, int N, int d) {
-    int i, j; /* TODO: ask if initing more than 1 per line is allowed */
+int sym(double** datapoint_coords, int N, int d, double ***result) {
+    int i;
+    int j;
+    int return_code = ERROR;
     double* arr = malloc(N*N*sizeof(double));
     double** mat = malloc(N*sizeof(double*));
+
+    GOTO_CLEANUP_IF_NULL(arr);
+    GOTO_CLEANUP_IF_NULL(mat);
     
     for (i=0; i<N; i++) {
         mat[i] = arr + (i*N);
@@ -200,14 +217,27 @@ double** sym(double** datapoint_coords, int N, int d) {
         }
     }
 
-    return mat;
+    return_code = SUCCESS;
+    *result = mat;
+
+cleanup:
+    if (return_code == ERROR) {
+        /* try to free memory */
+        free_2D_array(mat);
+    }
+    return return_code;
 }
 
-double** _ddg(double** A, int N) {
-    int i,j; /* TODO: ask if initing more than 1 per line is allowed */
+int _ddg(double** A, int N, double ***result) {
+    int i;
+    int j;
+    int return_code = ERROR;
     double d;
     double* arr = calloc(N*N, sizeof(double));
     double** D = malloc(N*sizeof(double*));
+
+    GOTO_CLEANUP_IF_NULL(arr);
+    GOTO_CLEANUP_IF_NULL(D);
 
     for (i=0; i<N; i++) {
         D[i] = arr + i*N;
@@ -218,16 +248,35 @@ double** _ddg(double** A, int N) {
         D[i][i] = d;
     }
 
-    return D;
+    return_code = SUCCESS;
+    *result = D;
+
+cleanup:
+    if (return_code == ERROR) {
+        /* try to free memory */
+        free_2D_array(D);
+    }
+    return return_code;
 }
 
-double** ddg(double** datapoint_coords, int N, int d) {
-    double** A = sym(datapoint_coords, N, d);
-    double** D = _ddg(A, N);
+int ddg(double **datapoint_coords, int N, int d, double ***result) {
+    int return_code = ERROR;
+    double **A = NULL;
+    double **D = NULL;
 
+    GOTO_CLEANUP_IF_ERROR(sym(datapoint_coords, N, d, &A));
+    GOTO_CLEANUP_IF_ERROR(_ddg(A, N, &D));
+
+    return_code = SUCCESS;
+    *result = D;
+
+cleanup:
     free_2D_array(A);
-
-    return D;
+    if (return_code == ERROR) {
+        /* try to free memory */
+        free_2D_array(D);
+    }
+    return return_code;
 }
 
 double** _mat_pow(double** mat, int N) {
@@ -244,10 +293,16 @@ double** _mat_pow(double** mat, int N) {
     return mat;
 }
 
-double** _mat_dot(double** A, double** B, int N) {
-    int i,j,k; /* TODO: ask if initing more than 1 per line is allowed */
+int _mat_dot(double** A, double** B, int N, double ***result) {
+    int i;
+    int j;
+    int k;
+    int return_code = ERROR;
     double* arr = calloc(N*N, sizeof(double));
     double** mat = malloc(N*sizeof(double*));
+
+    GOTO_CLEANUP_IF_NULL(arr);
+    GOTO_CLEANUP_IF_NULL(mat);
 
     for (i=0; i<N; i++) {
         mat[i] = arr + (i*N);
@@ -258,22 +313,44 @@ double** _mat_dot(double** A, double** B, int N) {
         }
     }
 
-    return mat;
+    return_code = SUCCESS;
+    *result = mat;
+
+cleanup:
+    if (return_code == ERROR) {
+        /* try to free memory */
+        free_2D_array(mat);
+    }
+    return return_code;
 }
 
-double** norm(double** datapoint_coords, int N, int d) {
-    double** A = sym(datapoint_coords, N, d);
-    double** D = _ddg(A, N);
-    double** W_; /* D^(-0.5)*A */
-    double** W; /* D^(-0.5)*A*D^(-0.5) */
-    D = _mat_pow(D, N);
-    W_ = _mat_dot(D, A, N);
-    W = _mat_dot(W_, D, N);
+int norm(double** datapoint_coords, int N, int d, double ***result) {
+    int return_code = ERROR;
+    double** A = NULL;
+    double** D = NULL;
+    double** W_ = NULL; /* D^(-0.5)*A */
+    double** W = NULL; /* D^(-0.5)*A*D^(-0.5) */
 
+    GOTO_CLEANUP_IF_ERROR(sym(datapoint_coords, N, d, &A));
+    GOTO_CLEANUP_IF_ERROR(_ddg(A, N, &D));
+
+    D = _mat_pow(D, N);
+    GOTO_CLEANUP_IF_ERROR(_mat_dot(D, A, N, &W_));
+    GOTO_CLEANUP_IF_ERROR(_mat_dot(W_, D, N, &W));
+
+    return_code = SUCCESS;
+    *result = W;
+
+cleanup:
     free_2D_array(A);
     free_2D_array(D);
     free_2D_array(W_);
-    return W;
+
+    if (return_code == ERROR) {
+        /* try to free memory */
+        free_2D_array(W);
+    }
+    return return_code;
 }
 
 void print_mat(double** mat, int N) {
@@ -308,18 +385,16 @@ int main(int argc, char *argv[]) {
     goal = argv[1];
     filename = argv[2];
 
-    printf("Running %s with input %s\n", goal, filename); /* TODO: remove */
-
     GOTO_CLEANUP_IF_ERROR(parse(filename, &d, &N, &datapoints));
 
     if (strcmp(goal, "sym") == 0) {
-        result = sym(datapoints, N, d);
+        GOTO_CLEANUP_IF_ERROR(sym(datapoints, N, d, &result));
     }
     else if (strcmp(goal, "ddg") == 0) {
-        result = ddg(datapoints, N, d);
+        GOTO_CLEANUP_IF_ERROR(ddg(datapoints, N, d, &result));
     }
     else if (strcmp(goal, "norm") == 0) {
-        result = norm(datapoints, N, d);
+        GOTO_CLEANUP_IF_ERROR(norm(datapoints, N, d, &result));
     }
 
     return_code = SUCCESS;
