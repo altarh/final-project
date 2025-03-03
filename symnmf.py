@@ -1,36 +1,10 @@
 import sys
 import pandas as pd
 import numpy as np
+ 
+import symnmfmodule
+
 np.random.seed(1234)
-
-# TODO: remove, just for testing and comparisons with C ------------------------------
-from math import exp
-def euclidean_distance(point1, point2):
-    return (sum([(point1[i] - point2[i])**2 for i in range(len(point1))]))**0.5
-
-def sym(datapoints):
-    N = len(datapoints)
-    A = [[exp(-euclidean_distance(datapoints[i], datapoints[j])/2) if i != j else 0 for j in range(N)]
-         for i in range(N)]
-    return np.array(A)
-
-def ddg(datapoints):
-    A = sym(datapoints)
-    D = np.zeros_like(A)
-
-    N = len(datapoints)
-    for i in range(N):
-        D[i][i] = np.sum(A[i])
-
-    return D
-
-def norm(datapoints):
-    A = sym(datapoints)
-    D = ddg(datapoints)**(-0.5)
-    D[D == np.inf] = 0
-
-    return D@A@D
-# -----------------------------------------------------------------------------------
 
 def print_error():
     '''Print an error message in case of an exception.'''
@@ -85,13 +59,13 @@ def main():
         raise Exception()
 
     if goal == "sym":
-        result = sym(datapoints)
+        result = symnmfmodule.sym(datapoints)
     elif goal == "ddg":
-        result = ddg(datapoints)
+        result = symnmfmodule.ddg(datapoints)
     elif goal == "norm":
-        result = norm(datapoints)
+        result = symnmfmodule.norm(datapoints)
     elif goal == "symnmf":
-        W = norm(datapoints)
+        W = symnmfmodule.norm(datapoints)
         H0 = initialize_H(W, N, k)
         result = symnmf(H0, W)
     else: # invalid goal
@@ -104,3 +78,4 @@ if __name__ == "__main__":
         main()
     except Exception:
         print_error()
+        raise

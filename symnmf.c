@@ -3,6 +3,8 @@
 #include <string.h>
 #include <math.h>
 
+#include "symnmf.h"
+
 const int SUCCESS = 0;
 const int ERROR = 1;
 
@@ -224,7 +226,7 @@ double calc_euclidean_distance(double *coord1, double *coord2, int d){
  *
  * @return SUCCESS if the calculation was successful, ERROR otherwise.
  */
-int sym(double** datapoint_coords, int N, int d, double ***result) {
+int sym_C(double** datapoint_coords, int N, int d, double ***result) {
     int i;
     int j;
     int return_code = ERROR;
@@ -308,12 +310,12 @@ cleanup:
  *
  * @return SUCCESS if the calculation was successful, ERROR otherwise.
  */
-int ddg(double **datapoint_coords, int N, int d, double ***result) {
+int ddg_C(double **datapoint_coords, int N, int d, double ***result) {
     int return_code = ERROR;
     double **A = NULL;
     double **D = NULL;
 
-    GOTO_CLEANUP_IF_ERROR(sym(datapoint_coords, N, d, &A));
+    GOTO_CLEANUP_IF_ERROR(sym_C(datapoint_coords, N, d, &A));
     GOTO_CLEANUP_IF_ERROR(_ddg(A, N, &D));
 
     return_code = SUCCESS;
@@ -393,14 +395,14 @@ cleanup:
  *
  * @return SUCCESS if the calculation was successful, ERROR otherwise.
  */
-int norm(double** datapoint_coords, int N, int d, double ***result) {
+int norm_C(double** datapoint_coords, int N, int d, double ***result) {
     int return_code = ERROR;
     double** A = NULL;
     double** D = NULL;
     double** W_ = NULL; /* will be: D^(-0.5)*A */
     double** W = NULL; /* will be: W_*D^(-0.5) = D^(-0.5)*A*D^(-0.5) */
 
-    GOTO_CLEANUP_IF_ERROR(sym(datapoint_coords, N, d, &A));
+    GOTO_CLEANUP_IF_ERROR(sym_C(datapoint_coords, N, d, &A));
     GOTO_CLEANUP_IF_ERROR(_ddg(A, N, &D));
 
     _D_pow(D, N); /* D = D^(-0.5) */
@@ -459,13 +461,13 @@ int main(int argc, char *argv[]) {
     GOTO_CLEANUP_IF_ERROR(parse(filename, &d, &N, &datapoints));
 
     if (strcmp(goal, "sym") == 0) {
-        GOTO_CLEANUP_IF_ERROR(sym(datapoints, N, d, &result));
+        GOTO_CLEANUP_IF_ERROR(sym_C(datapoints, N, d, &result));
     }
     else if (strcmp(goal, "ddg") == 0) {
-        GOTO_CLEANUP_IF_ERROR(ddg(datapoints, N, d, &result));
+        GOTO_CLEANUP_IF_ERROR(ddg_C(datapoints, N, d, &result));
     }
     else if (strcmp(goal, "norm") == 0) {
-        GOTO_CLEANUP_IF_ERROR(norm(datapoints, N, d, &result));
+        GOTO_CLEANUP_IF_ERROR(norm_C(datapoints, N, d, &result));
     }
     else { /* invalid goal */
         goto cleanup;
