@@ -6,63 +6,69 @@
 const int SUCCESS = 0;
 const int ERROR = 1;
 
-const int DEFAULT_ITER = 300;
-
-#define GOTO_CLEANUP_IF_NULL(x) { if (x == NULL) { goto cleanup; } }
-#define GOTO_CLEANUP_IF_NEGATIVE(x) { if (x < 0) { goto cleanup; } }
-#define GOTO_CLEANUP_IF_PYERROR_OCCURED() { if (NULL != PyErr_Occurred()) { goto cleanup; } }
+#define GOTO_CLEANUP_IF_NULL(x) { if ((x) == NULL) { goto cleanup; } }
+#define GOTO_CLEANUP_IF_ERROR(x) { if ((x) == ERROR) { goto cleanup; } }
 
 const char *GENERIC_ERROR_MSG = "An Error Has Occurred\n";
 
-typedef struct centroid {
-    struct coord *centroid_coords;
-    struct coord *sum;
-    int count;
-} centroid;
-
-typedef struct coord
-{
+typedef struct coord {
     double coord;
     struct coord *next;
 } coord;
 
-typedef struct datapoint
-{
-    struct coord *coords;
+typedef struct centroid {
+    coord *centroid_coords;
+    coord *sum;
+    int count;
+} centroid;
+
+typedef struct datapoint {
+    coord *coords;
     struct datapoint *next;
 } datapoint;
 
-/* internal funcs for read_args */
-int init_datapoint(struct datapoint **datapoint, struct coord *first_coord) {
-    struct datapoint *new_datapoint = malloc(sizeof(struct datapoint));
+/* internal funcs for read_args - initializes memory for datapoints and coordinates */
+int init_datapoint(datapoint **dp, coord *first_coord) {
+    datapoint *new_datapoint = malloc(sizeof(datapoint));
     if (new_datapoint == NULL) {
         return ERROR;
     }
     new_datapoint->coords = first_coord;
     new_datapoint->next = NULL;
 
-    *datapoint = new_datapoint;
+    *dp = new_datapoint;
     return SUCCESS;    
 }
 
-int init_coord(struct coord **coord, double n) {
-    struct coord *new_coord = malloc(sizeof(struct coord));
+int init_coord(coord **c, double n) {
+    coord *new_coord = malloc(sizeof(coord));
     if (new_coord == NULL) {
         return ERROR;
     }
     new_coord->coord = n;
     new_coord->next = NULL;
 
-    *coord = new_coord;
+    *c = new_coord;
     return SUCCESS;
 }
 
-int parse_file(const char *filename, int *d, int *N, struct datapoint **datapoints) {
+/**
+ * Reads a file and parses it into a linked list of datapoints.
+ *
+ * @param filename The name of the file to read.
+ * @param d The calculated number of coordinates in each datapoint.
+ * @param N The calculated number of datapoints in the linked list.
+ * @param datapoints The resulting linked list of datapoints.
+ *
+ * @return SUCCESS if the file was parsed successfully, ERROR otherwise.
+ */
+int parse_file(const char *filename, int *d, int *N, datapoint **datapoints) {
+    int return_code = ERROR;
     double n; /* for the double values */
     char delim; /* commas, \n, ... */
-    struct datapoint **curr_datapoint = datapoints;
-    struct coord *first_coord = NULL;
-    struct coord **curr_coord = NULL;
+    datapoint **curr_datapoint = datapoints;
+    coord *first_coord = NULL;
+    coord **curr_coord = NULL;
 
     FILE *file = fopen(filename, "r");
     GOTO_CLEANUP_IF_NULL(file);
@@ -72,17 +78,13 @@ int parse_file(const char *filename, int *d, int *N, struct datapoint **datapoin
     curr_coord = &first_coord;
     do {
         fscanf(file, "%lf%c", &n, &delim);
-        if (SUCCESS != init_coord(curr_coord, n)) {
-            return ERROR;
-        }
+        GOTO_CLEANUP_IF_ERROR(init_coord(curr_coord, n));
         curr_coord = &(*curr_coord)->next;
         (*d)++;
     } while (delim != '\n');
 
     /* initialize the first datapoint */
-    if (SUCCESS != init_datapoint(curr_datapoint, first_coord)) {
-        return ERROR;
-    }
+    GOTO_CLEANUP_IF_ERROR(init_datapoint(curr_datapoint, first_coord));
     curr_datapoint = &(*curr_datapoint)->next;
     (*N)++;
 
@@ -90,15 +92,11 @@ int parse_file(const char *filename, int *d, int *N, struct datapoint **datapoin
     first_coord = NULL;
     curr_coord = &first_coord;
     while (fscanf(file, "%lf%c", &n, &delim) == 2) {
-        if (SUCCESS != init_coord(curr_coord, n)) {
-            return ERROR;
-        }
+        GOTO_CLEANUP_IF_ERROR(init_coord(curr_coord, n));
         curr_coord = &(*curr_coord)->next;
 
         if (delim == '\n') { /* if at the end of the line */
-            if (SUCCESS != init_datapoint(curr_datapoint, first_coord)) {
-                return ERROR;
-            }
+            GOTO_CLEANUP_IF_ERROR(init_datapoint(curr_datapoint, first_coord));
             curr_datapoint = &(*curr_datapoint)->next;
             first_coord = NULL;
             curr_coord = &first_coord;
@@ -106,31 +104,67 @@ int parse_file(const char *filename, int *d, int *N, struct datapoint **datapoin
         }
     }
 
+    return_code = SUCCESS;
+
 cleanup:
     if (file != NULL) {
         fclose(file);
     }
-    return SUCCESS;
+    return return_code;
 }
 
-double calc_euclidean_distance(double *coord1, double *coord2, int d){
-    double sum = 0;
-    int i;
-
-    for (i = 0; i < d; i++){
-        sum += pow((coord1[i] - coord2[i]), 2);
+void free_coords(coord *c) {
+    coord *curr_coord = c;
+    while (curr_coord != NULL) {
+        coord *next_coord = curr_coord->next;
+        free(curr_coord);
+        curr_coord = next_coord;
     }
-    return sqrt(sum);
 }
 
-double** linked_list_to_2D_array(datapoint* point, int N, int d){
-    int i, j;
+void free_datapoints_structs(datapoint *datapoints) {
+    datapoint *curr_datapoint;
+    datapoint *next_datapoint;
+
+    curr_datapoint = datapoints;
+    while (curr_datapoint != NULL) {
+        next_datapoint = curr_datapoint->next;
+        free_coords(curr_datapoint->coords);
+        free(curr_datapoint);
+        curr_datapoint = next_datapoint;
+    }
+}
+
+void free_2D_array(double **array) {
+    if (array != NULL) {
+        free(array[0]);
+        free(array);
+        array = NULL;
+    }
+}
+
+/**
+ * Converts a linked list of datapoints into a 2D array.
+ *
+ * @param filename The name of the file to read.
+ * @param d The calculated number of coordinates in each datapoint.
+ * @param N The calculated number of datapoints in the linked list.
+ * @param result The resulting 2D array of datapoint coordinates.
+ *
+ * @return SUCCESS if the conversion was successful, ERROR otherwise.
+ */
+int linked_list_to_2D_array(datapoint* point, int N, int d, double ***result){
+    int i;
+    int j;
+    int return_code = ERROR;
     double *p;
     double **a;
     coord* coord1;
 
     p = calloc(d * N, sizeof(double));
+    GOTO_CLEANUP_IF_NULL(p);
     a = calloc(N, sizeof(double *));
+    GOTO_CLEANUP_IF_NULL(a);
 
     for (i = 0; i < N; i++) {
         coord1 = point->coords;
@@ -142,40 +176,115 @@ double** linked_list_to_2D_array(datapoint* point, int N, int d){
         point = point->next;
     }
 
-    return a;
+    return_code = SUCCESS;
+    *result = a;
+
+cleanup:
+    if (return_code == ERROR) {
+        /* try to free memory */
+        free_2D_array(a);
+    }
+    return return_code;
 }
 
-void free_2D_array(double **array) {
-    free(array[0]);
-    free(array);
+/**
+ * Reads a file and parses its contents into a 2D array of datapoint coordinates.
+ *
+ * @param filename The name of the file to read.
+ * @param d A pointer to the number of coordinates in each datapoint.
+ * @param N A pointer to the number of datapoints in the file.
+ * @param datapoints_array A pointer to the resulting 2D array of datapoint coordinates.
+ *
+ * @return SUCCESS if the parsing was successful, ERROR otherwise.
+ */
+int parse(const char *filename, int *d, int *N, double ***datapoints_array) {
+    int return_code = ERROR;
+    datapoint *datapoints = NULL;
+
+    GOTO_CLEANUP_IF_ERROR(parse_file(filename, d, N, &datapoints));
+    GOTO_CLEANUP_IF_ERROR(linked_list_to_2D_array(datapoints, *N, *d, datapoints_array));
+    return_code = SUCCESS;
+
+cleanup:
+    free_datapoints_structs(datapoints);
+
+    return return_code;
 }
 
-double** sym(double** datapoint_coords, int N, int d) {
-    int i, j; /* TODO: ask if initing more than 1 per line is allowed */
+/* Calculates the Euclidean distance between two points in d-dimensional space.  */
+double calc_euclidean_distance(double *coord1, double *coord2, int d){
+    double sum = 0;
+    int i;
+
+    for (i = 0; i < d; i++){
+        sum += pow((coord1[i] - coord2[i]), 2);
+    }
+    return sqrt(sum);
+}
+
+/**
+ * Calculates the similarity matrix A.
+ *
+ * @param datapoint_coords A 2D array of the datapoint coordinates.
+ * @param N The number of datapoints in the array.
+ * @param d The number of coordinates in each datapoint.
+ * @param result The resulting similarity matrix.
+ *
+ * @return SUCCESS if the calculation was successful, ERROR otherwise.
+ */
+int sym(double** datapoint_coords, int N, int d, double ***result) {
+    int i;
+    int j;
+    int return_code = ERROR;
     double* arr = malloc(N*N*sizeof(double));
-    double** mat = malloc(N*sizeof(double*));
+    double** A = malloc(N*sizeof(double*));
+
+    GOTO_CLEANUP_IF_NULL(arr);
+    GOTO_CLEANUP_IF_NULL(A);
     
     for (i=0; i<N; i++) {
-        mat[i] = arr + (i*N);
+        A[i] = arr + (i*N);
         for (j=0; j<N; j++) {
             if (i == j) {
-                mat[i][j] = 0;
+                A[i][j] = 0;
             }
             else {
                 double dist = calc_euclidean_distance(datapoint_coords[i], datapoint_coords[j], d);
-                mat[i][j] = exp(-dist/2);
+                A[i][j] = exp(-dist/2);
             }
         }
     }
 
-    return mat;
+    return_code = SUCCESS;
+    *result = A;
+
+cleanup:
+    if (return_code == ERROR) {
+        /* try to free memory */
+        free_2D_array(A);
+    }
+    return return_code;
 }
 
-double** _ddg(double** A, int N) {
-    int i,j; /* TODO: ask if initing more than 1 per line is allowed */
+/**
+ * Internal function which calculates the diagonal degree matrix D using the similarity matrix A.
+ *
+ * @param A The similarity matrix - a 2D array of size N x N.
+ * @param N The number of rows and columns in A.
+ * @param result The resulting diagonal degree matrix D.
+ *
+ * @return SUCCESS if the calculation was successful, ERROR otherwise.
+ */
+int _ddg(double** A, int N, double ***result) {
+    int i;
+    int j;
+    int return_code = ERROR;
     double d;
     double* arr = calloc(N*N, sizeof(double));
     double** D = malloc(N*sizeof(double*));
+
+    GOTO_CLEANUP_IF_NULL(arr);
+    GOTO_CLEANUP_IF_NULL(D);
 
     for (i=0; i<N; i++) {
         D[i] = arr + i*N;
@@ -186,16 +295,45 @@ double** _ddg(double** A, int N) {
         D[i][i] = d;
     }
 
-    return D;
+    return_code = SUCCESS;
+    *result = D;
+
+cleanup:
+    if (return_code == ERROR) {
+        /* try to free memory */
+        free_2D_array(D);
+    }
+    return return_code;
 }
 
-double** ddg(double** datapoint_coords, int N, int d) {
-    double** A = sym(datapoint_coords, N, d);
-    double** D = _ddg(A, N);
+/**
+ * Calculates the diagonal degree matrix D from datapoint coordinates.
+ *
+ * @param datapoint_coords A 2D array of the datapoint coordinates.
+ * @param N The number of datapoints in the array.
+ * @param d The number of coordinates in each datapoint.
+ * @param result The resulting diagonal degree matrix D.
+ *
+ * @return SUCCESS if the calculation was successful, ERROR otherwise.
+ */
+int ddg(double **datapoint_coords, int N, int d, double ***result) {
+    int return_code = ERROR;
+    double **A = NULL;
+    double **D = NULL;
 
+    GOTO_CLEANUP_IF_ERROR(sym(datapoint_coords, N, d, &A));
+    GOTO_CLEANUP_IF_ERROR(_ddg(A, N, &D));
+
+    return_code = SUCCESS;
+    *result = D;
+
+cleanup:
     free_2D_array(A);
-
-    return D;
+    if (return_code == ERROR) {
+        /* try to free memory */
+        free_2D_array(D);
+    }
+    return return_code;
 }
 
 double** _mat_pow(double** mat, int N) {
@@ -208,10 +346,26 @@ double** _mat_pow(double** mat, int N) {
     return mat;
 }
 
-double** _mat_dot(double** A, double** B, int N) {
-    int i,j,k; /* TODO: ask if initing more than 1 per line is allowed */
+/**
+ * Computes the matrix multiplication of two N x N matrices A and B.
+ *
+ * @param A The first matrix in the multiplication.
+ * @param B The second matrix in the multiplication.
+ * @param N The number of rows and columns in matrices A and B.
+ * @param result A pointer to the resulting matrix from the multiplication.
+ *
+ * @return SUCCESS if the multiplication was successful, ERROR otherwise.
+ */
+int _mat_dot(double** A, double** B, int N, double ***result) {
+    int i;
+    int j;
+    int k;
+    int return_code = ERROR;
     double* arr = calloc(N*N, sizeof(double));
     double** mat = malloc(N*sizeof(double*));
+
+    GOTO_CLEANUP_IF_NULL(arr);
+    GOTO_CLEANUP_IF_NULL(mat);
 
     for (i=0; i<N; i++) {
         mat[i] = arr + (i*N);
@@ -222,9 +376,57 @@ double** _mat_dot(double** A, double** B, int N) {
         }
     }
 
-    return mat;
+    return_code = SUCCESS;
+    *result = mat;
+
+cleanup:
+    if (return_code == ERROR) {
+        /* try to free memory */
+        free_2D_array(mat);
+    }
+    return return_code;
 }
 
+/**
+ * Calculates the normalized similarity matrix W.
+ *
+ * @param datapoint_coords A 2D array of the datapoint coordinates.
+ * @param N The number of datapoints in the array.
+ * @param d The number of coordinates in each datapoint.
+ * @param result The resulting normalized similarity matrix W.
+ *
+ * @return SUCCESS if the calculation was successful, ERROR otherwise.
+ */
+int norm(double** datapoint_coords, int N, int d, double ***result) {
+    int return_code = ERROR;
+    double** A = NULL;
+    double** D = NULL;
+    double** W_ = NULL; /* D^(-0.5)*A */
+    double** W = NULL; /* D^(-0.5)*A*D^(-0.5) */
+
+    GOTO_CLEANUP_IF_ERROR(sym(datapoint_coords, N, d, &A));
+    GOTO_CLEANUP_IF_ERROR(_ddg(A, N, &D));
+
+    D = _mat_pow(D, N);
+    GOTO_CLEANUP_IF_ERROR(_mat_dot(D, A, N, &W_));
+    GOTO_CLEANUP_IF_ERROR(_mat_dot(W_, D, N, &W));
+
+    return_code = SUCCESS;
+    *result = W;
+
+cleanup:
+    free_2D_array(A);
+    free_2D_array(D);
+    free_2D_array(W_);
+
+    if (return_code == ERROR) {
+        /* try to free memory */
+        free_2D_array(W);
+    }
+    return return_code;
+}
+
+/* Prints a matrix to the console. */
 void print_mat(double** mat, int N) {
     int i,j;
 
@@ -241,54 +443,8 @@ void print_mat(double** mat, int N) {
     }
 }
 
-double** norm(double** datapoint_coords, int N, int d) {
-    double** A = sym(datapoint_coords, N, d);
-    double** D = _ddg(A, N);
-    double** W_; /* D^(-0.5)*A */
-    double** W; /* D^(-0.5)*A*D^(-0.5) */
-    D = _mat_pow(D, N);
-    W_ = _mat_dot(D, A, N);
-    W = _mat_dot(W_, D, N);
-
-    free_2D_array(W_);
-
-    return W;
-}
-
-void free_coords(struct coord *coord) {
-    struct coord *curr_coord = coord;
-    while (curr_coord != NULL) {
-        struct coord *next_coord = curr_coord->next;
-        free(curr_coord);
-        curr_coord = next_coord;
-    }
-}
-
-void free_datapoints_structs(struct datapoint *datapoints) {
-    struct datapoint *curr_datapoint;
-    struct datapoint *next_datapoint;
-
-    curr_datapoint = datapoints;
-    while (curr_datapoint != NULL) {
-        next_datapoint = curr_datapoint->next;
-        free_coords(curr_datapoint->coords);
-        free(curr_datapoint);
-        curr_datapoint = next_datapoint;
-    }
-}
-
-double** parse(const char *filename, int *d, int *N) {
-    struct datapoint *datapoints = NULL;
-    double **datapoints_array = NULL;
-
-    parse_file(filename, d, N, &datapoints);
-    datapoints_array = linked_list_to_2D_array(datapoints, *N, *d);
-    free_datapoints_structs(datapoints);
-
-    return datapoints_array;
-}
-
 int main(int argc, char *argv[]) {
+    int return_code = ERROR;
     int d = 0;
     int N = 0;
     char *goal;
@@ -297,30 +453,32 @@ int main(int argc, char *argv[]) {
     double **datapoints = NULL;
 
     if (argc != 3) {
-        printf("%s", GENERIC_ERROR_MSG);
-        return ERROR;
+        goto cleanup;
     }
 
     goal = argv[1];
     filename = argv[2];
 
-    printf("Running %s with input %s\n", goal, filename);
-
-    datapoints = parse(filename, &d, &N);
+    GOTO_CLEANUP_IF_ERROR(parse(filename, &d, &N, &datapoints));
 
     if (strcmp(goal, "sym") == 0) {
-        result = sym(datapoints, N, d);
+        GOTO_CLEANUP_IF_ERROR(sym(datapoints, N, d, &result));
     }
     else if (strcmp(goal, "ddg") == 0) {
-        result = ddg(datapoints, N, d);
+        GOTO_CLEANUP_IF_ERROR(ddg(datapoints, N, d, &result));
     }
     else if (strcmp(goal, "norm") == 0) {
-        result = norm(datapoints, N, d);
+        GOTO_CLEANUP_IF_ERROR(norm(datapoints, N, d, &result));
     }
 
+    return_code = SUCCESS;
     print_mat(result, N);
 
+cleanup:
     free_2D_array(datapoints);
     free_2D_array(result);
-    return SUCCESS;
+    if (return_code == ERROR) {
+        printf("%s", GENERIC_ERROR_MSG);
+    }
+    return return_code;
 }
