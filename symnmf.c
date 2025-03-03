@@ -113,14 +113,31 @@ cleanup:
     return SUCCESS;
 }
 
-double calc_euclidean_distance(double *coord1, double *coord2, int d){
-    double sum = 0;
-    int i;
-
-    for (i = 0; i < d; i++){
-        sum += pow((coord1[i] - coord2[i]), 2);
+void free_coords(struct coord *coord) {
+    struct coord *curr_coord = coord;
+    while (curr_coord != NULL) {
+        struct coord *next_coord = curr_coord->next;
+        free(curr_coord);
+        curr_coord = next_coord;
     }
-    return sqrt(sum);
+}
+
+void free_datapoints_structs(struct datapoint *datapoints) {
+    struct datapoint *curr_datapoint;
+    struct datapoint *next_datapoint;
+
+    curr_datapoint = datapoints;
+    while (curr_datapoint != NULL) {
+        next_datapoint = curr_datapoint->next;
+        free_coords(curr_datapoint->coords);
+        free(curr_datapoint);
+        curr_datapoint = next_datapoint;
+    }
+}
+
+void free_2D_array(double **array) {
+    free(array[0]);
+    free(array);
 }
 
 double** linked_list_to_2D_array(datapoint* point, int N, int d){
@@ -143,6 +160,27 @@ double** linked_list_to_2D_array(datapoint* point, int N, int d){
     }
 
     return a;
+}
+
+double** parse(const char *filename, int *d, int *N) {
+    struct datapoint *datapoints = NULL;
+    double **datapoints_array = NULL;
+
+    parse_file(filename, d, N, &datapoints);
+    datapoints_array = linked_list_to_2D_array(datapoints, *N, *d);
+    free_datapoints_structs(datapoints);
+
+    return datapoints_array;
+}
+
+double calc_euclidean_distance(double *coord1, double *coord2, int d){
+    double sum = 0;
+    int i;
+
+    for (i = 0; i < d; i++){
+        sum += pow((coord1[i] - coord2[i]), 2);
+    }
+    return sqrt(sum);
 }
 
 double** sym(double** datapoint_coords, int N, int d) {
@@ -227,48 +265,15 @@ double** norm(double** datapoint_coords, int N, int d) {
     double** A = sym(datapoint_coords, N, d);
     double** D = _ddg(A, N);
     double** W;
+    double ** temp;
     D = _mat_pow(D, N);
-    W = _mat_dot(_mat_dot(D, A, N), D, N);
+    temp = _mat_dot(D, A, N);
+    W = _mat_dot(temp, D, N);
 
+    /* A become D (in place) so no need to free A. */
+    free_2D_array(D);
+    free_2D_array(temp);
     return W;
-}
-
-void free_coords(struct coord *coord) {
-    struct coord *curr_coord = coord;
-    while (curr_coord != NULL) {
-        struct coord *next_coord = curr_coord->next;
-        free(curr_coord);
-        curr_coord = next_coord;
-    }
-}
-
-void free_datapoints_structs(struct datapoint *datapoints) {
-    struct datapoint *curr_datapoint;
-    struct datapoint *next_datapoint;
-
-    curr_datapoint = datapoints;
-    while (curr_datapoint != NULL) {
-        next_datapoint = curr_datapoint->next;
-        free_coords(curr_datapoint->coords);
-        free(curr_datapoint);
-        curr_datapoint = next_datapoint;
-    }
-}
-
-void free_2D_array(double **array) {
-    free(array[0]);
-    free(array);
-}
-
-double** parse(const char *filename, int *d, int *N) {
-    struct datapoint *datapoints = NULL;
-    double **datapoints_array = NULL;
-
-    parse_file(filename, d, N, &datapoints);
-    datapoints_array = linked_list_to_2D_array(datapoints, *N, *d);
-    free_datapoints_structs(datapoints);
-
-    return datapoints_array;
 }
 
 int main(int argc, char *argv[]) {
@@ -314,7 +319,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    (void)result;  /* TODO: do something with result */
+    free_2D_array(result);
     free_2D_array(datapoints);
     return SUCCESS;
 }
