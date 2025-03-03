@@ -68,42 +68,43 @@ int parse_file(const char *filename, int *d, int *N, datapoint **datapoints) {
     char delim; /* commas, \n, ... */
     datapoint **curr_datapoint = datapoints;
     coord *first_coord = NULL;
-    coord **curr_coord = NULL;
+    coord **curr_coord = &first_coord;
+
     FILE *file = fopen(filename, "r");
     GOTO_CLEANUP_IF_NULL(file);
 
-    curr_coord = &first_coord;
-    do {
+    do { /* reading the first line of the file to extract d */
         fscanf(file, "%lf%c", &n, &delim);
         GOTO_CLEANUP_IF_ERROR(init_coord(curr_coord, n));
         curr_coord = &(*curr_coord)->next;
-        (*d)++;
+        (*d)++; /* counting number of coordinates */
     } while (delim != '\n');
 
     GOTO_CLEANUP_IF_ERROR(init_datapoint(curr_datapoint, first_coord));
-    curr_datapoint = &(*curr_datapoint)->next;
+    curr_datapoint = &(*curr_datapoint)->next; /* add first point to datapoint linked list */
     (*N)++;
 
-    first_coord = NULL;
-    curr_coord = &first_coord;
-    while (fscanf(file, "%lf%c", &n, &delim) == 2) {
-        GOTO_CLEANUP_IF_ERROR(init_coord(curr_coord, n));
-        curr_coord = &(*curr_coord)->next;
+    curr_coord = &first_coord; /* reset coordinates linked list */
+    while (fscanf(file, "%lf%c", &n, &delim) == 2) { /* reading the rest of the file */
+        GOTO_CLEANUP_IF_ERROR(init_coord(curr_coord, n)); /* init coordinate */
+        curr_coord = &(*curr_coord)->next; /* add to coordinates linked list */
         if (delim == '\n') { /* if at the end of the line */
-            GOTO_CLEANUP_IF_ERROR(init_datapoint(curr_datapoint, first_coord));
-            curr_datapoint = &(*curr_datapoint)->next;
-            first_coord = NULL;
-            curr_coord = &first_coord;
-            (*N)++;
+            GOTO_CLEANUP_IF_ERROR(init_datapoint(curr_datapoint, first_coord)); /* init datapoint */
+            curr_datapoint = &(*curr_datapoint)->next; /* add it to the linked list */
+            curr_coord = &first_coord; /* reset coordinates linked list for next datapoint */
+            (*N)++; /* counting number of datapoints */
         }
     }
+
     return_code = SUCCESS;
+
 cleanup:
     if (file != NULL)
         fclose(file);
     return return_code;
 }
 
+/* funcs for freeing allocated memory */
 void free_coords(coord *c) {
     coord *curr_coord = c;
     while (curr_coord != NULL) {
