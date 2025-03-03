@@ -3,6 +3,7 @@ from sklearn import metrics
 import sys
 import pandas as pd
 import HW1
+import symnmfmodule
 import symnmf
 import numpy as np
 
@@ -14,7 +15,7 @@ def load_datapoints(filename):
 def main():
     K = int(sys.argv[1])
     file = sys.argv[2]
-    EPSILON = 0.001
+    EPSILON = 1e-4
     DEFAULT_ITER = 300
 
     datapoints = load_datapoints(file)
@@ -35,7 +36,7 @@ def main():
     
     kmeans_silhouette_score = metrics.silhouette_score(datapoints, kmeans_labeling, metric='euclidean')
 
-    W = symnmf.norm(datapoints)
+    W = symnmfmodule.norm(datapoints)
     H = symnmf.initialize_H(W, N, K)
     H = symnmf.symnmf(H, W)
 
@@ -46,7 +47,7 @@ def main():
     print(f"kmeans: {kmeans_silhouette_score}")
 
 if __name__ == "__main__":
-    # try:
-    main()
-    # except Exception:
-    #     symnmf.print_error()
+    try:
+        main()
+    except Exception:
+        symnmf.print_error()
