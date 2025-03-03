@@ -295,7 +295,6 @@ double** parse(const char *filename, int *d, int *N) {
 int main(int argc, char *argv[]) {
     int d = 0;
     int N = 0;
-    int i,j; 
     char *goal;
     char *filename;
     double **result = NULL;
