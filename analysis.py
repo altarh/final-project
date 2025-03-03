@@ -47,7 +47,7 @@ def main():
     print(f"kmeans: {kmeans_silhouette_score}")
 
 if __name__ == "__main__":
-    # try:
-    main()
-    # except Exception:
-    #     symnmf.print_error()
+    try:
+        main()
+    except Exception:
+        symnmf.print_error()
