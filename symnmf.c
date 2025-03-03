@@ -134,6 +134,12 @@ void free_2D_array(double **array) {
     }
 }
 
+void free_1D_array(double *array) {
+    if (array != NULL) {
+        free(array);
+    }
+}
+
 /**
  * Converts a linked list of datapoints into a 2D array.
  *
@@ -235,7 +241,7 @@ int sym_C(double** datapoint_coords, int N, int d, double ***result) {
     
     for (i=0; i<N; i++) {
         A[i] = arr + (i*N);
-        for (j=0; j<N; j++) {
+        for (j=i+1; j<N; j++) {
             if (i == j) {
                 A[i][j] = 0;
             }
@@ -243,6 +249,7 @@ int sym_C(double** datapoint_coords, int N, int d, double ***result) {
                 double dist = calc_euclidean_distance(datapoint_coords[i], datapoint_coords[j], d);
                 A[i][j] = exp(-dist/2);
             }
+            arr[j*N+i] = A[i][j]; /* symmetry between A[j][i] (=arr[j*N+i]) and A[i][j] */
         }
     }
 
@@ -258,6 +265,43 @@ cleanup:
 }
 
 /**
+ * Internal function which calculates the degree values using the similarity matrix A.
+ *
+ * @param A The similarity matrix - a 2D array of size N x N.
+ * @param N The number of rows and columns in A.
+ * @param result The resulting array of degrees.
+ *
+ * @return SUCCESS if the calculation was successful, ERROR otherwise.
+ */
+int _calc_diag(double** A, int N, double **result) {
+    int return_code = ERROR;
+    int i;
+    int j;
+    double d;
+    double* diag = malloc(N*sizeof(double));
+
+    GOTO_CLEANUP_IF_NULL(diag);
+
+    for (i=0; i<N; i++) {
+        d = 0;
+        for (j=0; j<N; j++) {
+            d += A[i][j];
+        }
+        diag[i] = d;
+    }
+
+    return_code = SUCCESS;
+    *result = diag;
+
+cleanup:
+    if (return_code == ERROR) {
+        /* try to free memory */
+        free_1D_array(diag);
+    }
+    return return_code;
+}
+
+/**
  * Internal function which calculates the diagonal degree matrix D using the similarity matrix A.
  *
  * @param A The similarity matrix - a 2D array of size N x N.
@@ -268,28 +312,25 @@ cleanup:
  */
 int _ddg(double** A, int N, double ***result) {
     int i;
-    int j;
     int return_code = ERROR;
-    double d;
     double* arr = calloc(N*N, sizeof(double));
     double** D = malloc(N*sizeof(double*));
+    double* diag = NULL;
 
     GOTO_CLEANUP_IF_NULL(arr);
     GOTO_CLEANUP_IF_NULL(D);
+    GOTO_CLEANUP_IF_ERROR(_calc_diag(A, N, &diag));
 
     for (i=0; i<N; i++) {
         D[i] = arr + i*N;
-        d = 0;
-        for (j=0; j<N; j++) {
-            d += A[i][j];
-        }
-        D[i][i] = d;
+        D[i][i] = diag[i];
     }
 
     return_code = SUCCESS;
     *result = D;
 
 cleanup:
+    free_1D_array(diag);
     if (return_code == ERROR) {
         /* try to free memory */
         free_2D_array(D);
@@ -328,58 +369,17 @@ cleanup:
 }
 
 /**
- * Calculates D^(-0.5) for the normalized similarity matrix (in-place).
+ * Calculates the values on the diagonal of D^(-0.5) for the normalized similarity matrix (in-place).
  *
- * @param D The diagonal degree matrix.
- * @param N The number of rows and columns in D.
+ * @param diag The degrees array.
+ * @param N The length of diag.
  */
-void _D_pow(double** D, int N) {
+int _calc_diag_pow(double* diag, int N) {
     int i;
     
     for (i=0; i<N; i++) {
-        D[i][i] = pow(D[i][i], -0.5);
+        diag[i] = pow(diag[i], -0.5);
     }
-}
-
-/**
- * Computes the matrix multiplication of two N x N matrices A and B.
- *
- * @param A The first matrix in the multiplication.
- * @param B The second matrix in the multiplication.
- * @param N The number of rows and columns in matrices A and B.
- * @param result A pointer to the resulting matrix from the multiplication.
- *
- * @return SUCCESS if the multiplication was successful, ERROR otherwise.
- */
-int _mat_dot(double** A, double** B, int N, double ***result) {
-    int i;
-    int j;
-    int k;
-    int return_code = ERROR;
-    double* arr = calloc(N*N, sizeof(double));
-    double** mat = malloc(N*sizeof(double*));
-
-    GOTO_CLEANUP_IF_NULL(arr);
-    GOTO_CLEANUP_IF_NULL(mat);
-
-    for (i=0; i<N; i++) {
-        mat[i] = arr + (i*N);
-        for (j=0; j<N; j++) {
-            for (k=0; k<N; k++) {
-                mat[i][j] += A[i][k] * B[k][j];
-            }
-        }
-    }
-
-    return_code = SUCCESS;
-    *result = mat;
-
-cleanup:
-    if (return_code == ERROR) {
-        /* try to free memory */
-        free_2D_array(mat);
-    }
-    return return_code;
 }
 
 /**
@@ -394,26 +394,33 @@ cleanup:
  */
 int norm_C(double** datapoint_coords, int N, int d, double ***result) {
     int return_code = ERROR;
+    int i;
+    int j;
     double** A = NULL;
-    double** D = NULL;
-    double** W_ = NULL; /* will be: D^(-0.5)*A */
-    double** W = NULL; /* will be: W_*D^(-0.5) = D^(-0.5)*A*D^(-0.5) */
+    double* diag = NULL;
+    double* arr = malloc(N*N*sizeof(double));
+    double** W = malloc(N*sizeof(double*));
 
+    GOTO_CLEANUP_IF_NULL(arr);
+    GOTO_CLEANUP_IF_NULL(W);
     GOTO_CLEANUP_IF_ERROR(sym_C(datapoint_coords, N, d, &A));
-    GOTO_CLEANUP_IF_ERROR(_ddg(A, N, &D));
+    GOTO_CLEANUP_IF_ERROR(_calc_diag(A, N, &diag));
+    GOTO_CLEANUP_IF_ERROR(_calc_diag_pow(diag, N));
 
-    _D_pow(D, N); /* D = D^(-0.5) */
-    GOTO_CLEANUP_IF_ERROR(_mat_dot(D, A, N, &W_));
-    GOTO_CLEANUP_IF_ERROR(_mat_dot(W_, D, N, &W));
+    for (i=0; i<N; i++) {
+        W[i] = arr + i*N;
+        for (j=i+1; j<N; j++) {
+            W[i][j] = A[i][j] * diag[i] * diag[j];
+            arr[j*N+i] = W[i][j]; /* symmetry between A[j][i] (=arr[j*N+i]) and A[i][j] */
+        }
+    }
 
     return_code = SUCCESS;
     *result = W;
 
 cleanup:
     free_2D_array(A);
-    free_2D_array(D);
-    free_2D_array(W_);
-
+    free_1D_array(diag);
     if (return_code == ERROR) {
         /* try to free memory */
         free_2D_array(W);
