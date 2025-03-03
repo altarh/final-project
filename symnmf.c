@@ -5,6 +5,9 @@
 
 #include "symnmf.h"
 
+const int SUCCESS = 0;
+const int ERROR = 1;
+
 #define GOTO_CLEANUP_IF_NULL(x) { if ((x) == NULL) { goto cleanup; } }
 #define GOTO_CLEANUP_IF_ERROR(x) { if ((x) == ERROR) { goto cleanup; } }
 

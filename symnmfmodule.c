@@ -8,6 +8,8 @@
 #define GOTO_CLEANUP_IF_NEGATIVE(x) { if (x < 0) { goto cleanup; } }
 #define GOTO_CLEANUP_IF_PYERROR_OCCURED() { if (NULL != PyErr_Occurred()) { goto cleanup; } }
 
+typedef int handler(double **, int, int, double ***);
+
 static PyObject* sym(PyObject *self, PyObject *args);
 static PyObject* ddg(PyObject *self, PyObject *args);
 static PyObject* norm(PyObject *self, PyObject *args);
@@ -34,14 +36,6 @@ PyMODINIT_FUNC PyInit_symnmfmodule(void) {
         return NULL;
     }
     return m;
-}
-
-void free_2D_array(double **array) {
-    if (array != NULL) {
-        free(array[0]);
-        free(array);
-        array = NULL;
-    }
 }
 
 int get_datapoints(int N, int d, PyObject *datapoints, double ***datapoints_array_out) {
@@ -132,7 +126,7 @@ cleanup:
     return return_code;
 }
 
-static PyObject* sym(PyObject *self, PyObject *args) {
+static PyObject *call_handler(PyObject *self, PyObject *args, handler handler_func) {
     int N;
     int d;
     double **datapoints = NULL;
@@ -140,9 +134,23 @@ static PyObject* sym(PyObject *self, PyObject *args) {
     PyObject *matrix_result = NULL;  /* output value */
 
     GOTO_CLEANUP_IF_ERROR(parse_datapoints(self, args, &d, &N, &datapoints));
-    GOTO_CLEANUP_IF_ERROR(sym_C(datapoints, N, d, &result));
+    GOTO_CLEANUP_IF_ERROR(handler_func(datapoints, N, d, &result));
     GOTO_CLEANUP_IF_ERROR(build_output_matrix(N, result, &matrix_result));
 
 cleanup:
+    free_2D_array(datapoints);
+    free_2D_array(result);
     return matrix_result;
+}
+
+static PyObject *sym(PyObject *self, PyObject *args) {
+    return call_handler(self, args, sym_C);
+}
+
+static PyObject *ddg(PyObject *self, PyObject *args) {
+    return call_handler(self, args, ddg_C);
+}
+
+static PyObject *norm(PyObject *self, PyObject *args) {
+    return call_handler(self, args, norm_C);
 }
