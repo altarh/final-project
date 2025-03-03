@@ -8,9 +8,6 @@
 const int SUCCESS = 0;
 const int ERROR = 1;
 
-#define GOTO_CLEANUP_IF_NULL(x) { if ((x) == NULL) { goto cleanup; } }
-#define GOTO_CLEANUP_IF_ERROR(x) { if ((x) == ERROR) { goto cleanup; } }
-
 const char *GENERIC_ERROR_MSG = "An Error Has Occurred\n";
 
 typedef struct coord {
