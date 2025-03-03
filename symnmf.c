@@ -199,14 +199,10 @@ double** ddg(double** datapoint_coords, int N, int d) {
 }
 
 double** _mat_pow(double** mat, int N) {
-    int i,j; /* TODO: ask if initing more than 1 per line is allowed */
+    int i;
     
     for (i=0; i<N; i++) {
-        for (j=0; j<N; j++) {
-            if (mat[i][j] != 0) {
-                mat[i][j] = pow(mat[i][j], -0.5);
-            }
-        }
+        mat[i][i] = pow(mat[i][i], -0.5);
     }
 
     return mat;
