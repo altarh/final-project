@@ -1,7 +1,7 @@
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
 
 #include "symnmf.h"
 
@@ -36,7 +36,7 @@ int init_datapoint(datapoint **dp, coord *first_coord) {
     new_datapoint->next = NULL;
 
     *dp = new_datapoint;
-    return SUCCESS;    
+    return SUCCESS;
 }
 
 int init_coord(coord **c, double n) {
@@ -87,11 +87,11 @@ int parse_file(const char *filename, int *d, int *N, datapoint **datapoints) {
     while (fscanf(file, "%lf%c", &n, &delim) == 2) { /* reading the rest of the file */
         GOTO_CLEANUP_IF_ERROR(init_coord(curr_coord, n)); /* init coordinate */
         curr_coord = &(*curr_coord)->next; /* add to coordinates linked list */
-        if (delim == '\n') { /* if at the end of the line */
+        if (delim == '\n') {               /* if at the end of the line */
             GOTO_CLEANUP_IF_ERROR(init_datapoint(curr_datapoint, first_coord)); /* init datapoint */
             curr_datapoint = &(*curr_datapoint)->next; /* add it to the linked list */
             curr_coord = &first_coord; /* reset coordinates linked list for next datapoint */
-            (*N)++; /* counting number of datapoints */
+            (*N)++;                    /* counting number of datapoints */
         }
     }
 
@@ -144,13 +144,13 @@ void free_2D_array(double **array) {
  *
  * @return SUCCESS if the conversion was successful, ERROR otherwise.
  */
-int linked_list_to_2D_array(datapoint* point, int N, int d, double ***result){
+int linked_list_to_2D_array(datapoint *point, int N, int d, double ***result) {
     int i;
     int j;
     int return_code = ERROR;
     double *p = NULL;
     double **a = NULL;
-    coord* coord1 = NULL;
+    coord *coord1 = NULL;
 
     p = calloc(d * N, sizeof(double));
     GOTO_CLEANUP_IF_NULL(p);
@@ -207,7 +207,7 @@ double calc_squared_euclidean_distance(double *coord1, double *coord2, int d){
     double sum = 0;
     int i;
 
-    for (i = 0; i < d; i++){
+    for (i = 0; i < d; i++) {
         sum += pow((coord1[i] - coord2[i]), 2);
     }
     return sum;
@@ -223,25 +223,25 @@ double calc_squared_euclidean_distance(double *coord1, double *coord2, int d){
  *
  * @return SUCCESS if the calculation was successful, ERROR otherwise.
  */
-int sym_C(double** datapoint_coords, int N, int d, double ***result) {
+int sym_C(double **datapoint_coords, int N, int d, double ***result) {
     int i;
     int j;
     int return_code = ERROR;
-    double* arr = malloc(N*N*sizeof(double));
-    double** A = malloc(N*sizeof(double*));
+    double *arr = malloc(N * N * sizeof(double));
+    double **A = malloc(N * sizeof(double *));
 
     GOTO_CLEANUP_IF_NULL(arr);
     GOTO_CLEANUP_IF_NULL(A);
-    
-    for (i=0; i<N; i++) {
-        A[i] = arr + (i*N);
-        for (j=0; j<N; j++) {
+
+    for (i = 0; i < N; i++) {
+        A[i] = arr + (i * N);
+        for (j = 0; j < N; j++) {
             if (i == j) {
                 A[i][j] = 0;
             }
             else {
                 double dist = calc_squared_euclidean_distance(datapoint_coords[i], datapoint_coords[j], d);
-                A[i][j] = exp(-dist/2);
+                A[i][j] = exp(-dist / 2);
             }
         }
     }
@@ -266,21 +266,21 @@ cleanup:
  *
  * @return SUCCESS if the calculation was successful, ERROR otherwise.
  */
-int _ddg(double** A, int N, double ***result) {
+int _ddg(double **A, int N, double ***result) {
     int i;
     int j;
     int return_code = ERROR;
     double d;
-    double* arr = calloc(N*N, sizeof(double));
-    double** D = malloc(N*sizeof(double*));
+    double *arr = calloc(N * N, sizeof(double));
+    double **D = malloc(N * sizeof(double *));
 
     GOTO_CLEANUP_IF_NULL(arr);
     GOTO_CLEANUP_IF_NULL(D);
 
-    for (i=0; i<N; i++) {
-        D[i] = arr + i*N;
+    for (i = 0; i < N; i++) {
+        D[i] = arr + i * N;
         d = 0;
-        for (j=0; j<N; j++) {
+        for (j = 0; j < N; j++) {
             d += A[i][j];
         }
         D[i][i] = d;
@@ -333,10 +333,10 @@ cleanup:
  * @param D The diagonal degree matrix.
  * @param N The number of rows and columns in D.
  */
-void _D_pow(double** D, int N) {
+void _D_pow(double **D, int N) {
     int i;
-    
-    for (i=0; i<N; i++) {
+
+    for (i = 0; i < N; i++) {
         D[i][i] = pow(D[i][i], -0.5);
     }
 }
@@ -351,21 +351,21 @@ void _D_pow(double** D, int N) {
  *
  * @return SUCCESS if the multiplication was successful, ERROR otherwise.
  */
-int _mat_dot(double** A, double** B, int N, double ***result) {
+int _mat_dot(double **A, double **B, int N, double ***result) {
     int i;
     int j;
     int k;
     int return_code = ERROR;
-    double* arr = calloc(N*N, sizeof(double));
-    double** mat = malloc(N*sizeof(double*));
+    double *arr = calloc(N * N, sizeof(double));
+    double **mat = malloc(N * sizeof(double *));
 
     GOTO_CLEANUP_IF_NULL(arr);
     GOTO_CLEANUP_IF_NULL(mat);
 
-    for (i=0; i<N; i++) {
-        mat[i] = arr + (i*N);
-        for (j=0; j<N; j++) {
-            for (k=0; k<N; k++) {
+    for (i = 0; i < N; i++) {
+        mat[i] = arr + (i * N);
+        for (j = 0; j < N; j++) {
+            for (k = 0; k < N; k++) {
                 mat[i][j] += A[i][k] * B[k][j];
             }
         }
@@ -392,12 +392,12 @@ cleanup:
  *
  * @return SUCCESS if the calculation was successful, ERROR otherwise.
  */
-int norm_C(double** datapoint_coords, int N, int d, double ***result) {
+int norm_C(double **datapoint_coords, int N, int d, double ***result) {
     int return_code = ERROR;
-    double** A = NULL;
-    double** D = NULL;
-    double** W_ = NULL; /* will be: D^(-0.5)*A */
-    double** W = NULL; /* will be: W_*D^(-0.5) = D^(-0.5)*A*D^(-0.5) */
+    double **A = NULL;
+    double **D = NULL;
+    double **W_ = NULL; /* will be: D^(-0.5)*A */
+    double **W = NULL;  /* will be: W_*D^(-0.5) = D^(-0.5)*A*D^(-0.5) */
 
     GOTO_CLEANUP_IF_ERROR(sym_C(datapoint_coords, N, d, &A));
     GOTO_CLEANUP_IF_ERROR(_ddg(A, N, &D));
@@ -422,17 +422,16 @@ cleanup:
 }
 
 /* Prints a matrix to the console. */
-void print_mat(double** mat, int N) {
+void print_mat(double **mat, int N) {
     int i;
     int j;
 
-    for (i=0; i<N; i++) {
-        for (j=0; j<N; j++) {
+    for (i = 0; i < N; i++) {
+        for (j = 0; j < N; j++) {
             printf("%.4f", mat[i][j]);
-            if (j == N-1) {
+            if (j == N - 1) {
                 printf("\n");
-            }
-            else {
+            } else {
                 printf(",");
             }
         }
