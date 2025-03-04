@@ -392,8 +392,8 @@ int norm_C(double **datapoint_coords, int N, int d, double ***result) {
     int j;
     double **A = NULL;
     double *diag = NULL;
-    double *arr = malloc(N * N * sizeof(double));
-    double **W = malloc(N * sizeof(double *));
+    double *arr = calloc(N * N, sizeof(double));
+    double **W = calloc(N, sizeof(double *));
 
     GOTO_CLEANUP_IF_NULL(arr);
     GOTO_CLEANUP_IF_NULL(W);
@@ -403,7 +403,8 @@ int norm_C(double **datapoint_coords, int N, int d, double ***result) {
 
     for (i = 0; i < N; i++) {
         W[i] = arr + i * N;
-        for (j = i + 1; j < N; j++) {
+        /* not setting the diagonal of W as it is always 0 */
+        for (j = i; j < N; j++) {
             W[i][j] = A[i][j] * diag[i] * diag[j];
             arr[j*N+i] = W[i][j]; /* symmetry between A[j][i] (=arr[j*N+i]) and A[i][j] */
         }
