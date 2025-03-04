@@ -425,11 +425,66 @@ cleanup:
     return return_code;
 }
 
+/**
+ * Computes the matrix multiplication of two N x N matrices A and B.
+ *
+ * @param A The first matrix in the multiplication.
+ * @param B The second matrix in the multiplication.
+ * @param N The number of rows and columns in matrices A and B.
+ * @param result A pointer to the resulting matrix from the multiplication.
+ *
+ * @return SUCCESS if the multiplication was successful, ERROR otherwise.
+ */
+int _mat_dot(double** A, double** B, int N, double ***result) {
+    int i;
+    int j;
+    int k;
+    int return_code = ERROR;
+    double* arr = calloc(N*N, sizeof(double));
+    double** mat = malloc(N*sizeof(double*));
+
+    GOTO_CLEANUP_IF_NULL(arr);
+    GOTO_CLEANUP_IF_NULL(mat);
+
+    for (i=0; i<N; i++) {
+        mat[i] = arr + (i*N);
+        for (j=0; j<N; j++) {
+            for (k=0; k<N; k++) {
+                mat[i][j] += A[i][k] * B[k][j];
+            }
+        }
+    }
+
+    return_code = SUCCESS;
+    *result = mat;
+
+cleanup:
+    if (return_code == ERROR) {
+        /* try to free memory */
+        free_2D_array(mat);
+    }
+    return return_code;
+}
+
+int update_H(double **H, double **W, int N, double ***result) {
+    int return_code = ERROR;
+    double **numerator = NULL;
+
+    GOTO_CLEANUP_IF_ERROR(_mat_dot(W, H, N, &numerator));
+
+    return_code = SUCCESS;
+    *result = ;
+
+cleanup:
+    return return_code;
+}
+
 int symnmf_C(double **H, double **W, int N, int k, double ***result) {
     int i;
     int return_code = ERROR;
     double epsilon = exp(-4);
     double beta = 0.5;
+    double **new_H = NULL;
 
     for (i = 0; i < MAX_ITERATIONS; i++) {
         /* update H */
