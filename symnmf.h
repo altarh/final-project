@@ -1,9 +1,10 @@
 extern const int SUCCESS;
 extern const int ERROR;
 
-int sym_C(double** datapoint_coords, int N, int d, double ***result);
+int sym_C(double **datapoint_coords, int N, int d, double ***result);
 int ddg_C(double **datapoint_coords, int N, int d, double ***result);
-int norm_C(double** datapoint_coords, int N, int d, double ***result);
+int norm_C(double **datapoint_coords, int N, int d, double ***result);
+int symnmf_C(double **H, double **W, int N, int k, double ***result);
 
 /* helper functions */
 #define GOTO_CLEANUP_IF_NULL(x) { if ((x) == NULL) { goto cleanup; } }

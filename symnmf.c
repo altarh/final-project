@@ -5,6 +5,8 @@
 
 #include "symnmf.h"
 
+#define MAX_ITERATIONS (300)
+
 const int SUCCESS = 0;
 const int ERROR = 1;
 
@@ -420,6 +422,24 @@ cleanup:
         /* try to free memory */
         free_2D_array(W);
     }
+    return return_code;
+}
+
+int symnmf_C(double **H, double **W, int N, int k, double ***result) {
+    int i;
+    int return_code = ERROR;
+    double epsilon = exp(-4);
+    double beta = 0.5;
+
+    for (i = 0; i < MAX_ITERATIONS; i++) {
+        /* update H */
+        /* check for convergence */
+    }
+
+    return_code = SUCCESS;
+    *result = H;
+
+cleanup:
     return return_code;
 }
 
