@@ -9,6 +9,7 @@
 
 const int SUCCESS = 0;
 const int ERROR = 1;
+const double BETA = 0.5;
 
 const char *GENERIC_ERROR_MSG = "An Error Has Occurred\n";
 
@@ -53,18 +54,18 @@ int init_coord(coord **c, double n) {
     return SUCCESS;
 }
 
-/* initializes 2D matrix of N rows and M columns with zeroes */
-int init_matrix(matrix *m, int N, int M) {
+/* initializes 2D matrix of num_rows rows and num_cols columns with zeroes */
+int init_matrix(matrix *m, int num_rows, int num_cols) {
     int i;
     int return_code = ERROR;
-    double *arr = calloc(N * M, sizeof(double));
-    matrix mat = calloc(N, sizeof(double *));
+    double *arr = calloc(num_rows * num_cols, sizeof(double));
+    matrix mat = calloc(num_rows, sizeof(double *));
 
     GOTO_CLEANUP_IF_NULL(arr);
     GOTO_CLEANUP_IF_NULL(mat);
 
-    for (i = 0; i < N; i++) {
-        mat[i] = arr + i * M;
+    for (i = 0; i < num_rows; i++) {
+        mat[i] = arr + (i * num_cols);
     }
 
     return_code = SUCCESS;
@@ -479,22 +480,22 @@ cleanup:
  * Computes and returns the transpose of a N x N matrix.
  *
  * @param mat The matrix to transpose.
- * @param N The number of rows and columns in the matrix
+ * @param num_rows The number of rows in the matrix
+ * @param num_cols The number of columns in the matrix
  * @param result A pointer to the resulting matrix.
  *
  * @return SUCCESS if the multiplication was successful, ERROR otherwise.
  */
-int transpose(matrix mat, int N, matrix *result) {
+int transpose(matrix mat, int num_rows, int num_cols, matrix *result) {
     int i;
     int j;
-    int k;
     int return_code = ERROR;
     matrix mat_transpose = NULL;
 
-    GOTO_CLEANUP_IF_ERROR(init_matrix(&mat_transpose, N, N));
+    GOTO_CLEANUP_IF_ERROR(init_matrix(&mat_transpose, num_cols, num_rows));
 
-    for (i=0; i<N; i++) {
-        for (j=0; j<N; j++) {
+    for (i = 0; i < num_cols; i++) {
+        for (j = 0; j < num_rows; j++) {
             mat_transpose[i][j] = mat[j][i];
         }
     }
@@ -510,16 +511,41 @@ cleanup:
     return return_code;
 }
 
-int update_H(matrix H, matrix W, int N, matrix *result) {
+int update_H(matrix H, matrix W, int N, int k, matrix *result) {
+    int i;
+    int j;
     int return_code = ERROR;
+    matrix temp = NULL;  /* for intermediate matrix multiplication */
     matrix numerator = NULL;
+    matrix denumerator = NULL;
+    matrix H_transpose = NULL;
+    matrix new_H = NULL;
 
-    GOTO_CLEANUP_IF_ERROR(mat_dot(W, H, N, &numerator));
+    GOTO_CLEANUP_IF_ERROR(init_matrix(&new_H, N, k));
+    GOTO_CLEANUP_IF_ERROR(mat_dot(W, H, N, &numerator));  /* TODO H is size n X k */
+    GOTO_CLEANUP_IF_ERROR(transpose(H, N, k, &H_transpose));
+    GOTO_CLEANUP_IF_ERROR(mat_dot(H, H_transpose, N, &temp));
+    GOTO_CLEANUP_IF_ERROR(mat_dot(temp, H, N, &denumerator));
+
+    for (i = 0; i < N; i++) {
+        for (j = 0; j < k; j++) {
+            new_H[i][j] = H[i][j] * (1 - BETA + (BETA * (numerator[i][j] / denumerator[i][j])));
+        }
+        
+    }
 
     return_code = SUCCESS;
-    *result = numerator; /* TODO */
+    *result = new_H;
 
 cleanup:
+    free_2D_matrix(&temp);
+    free_2D_matrix(&numerator);
+    free_2D_matrix(&denumerator);
+    free_2D_matrix(&H_transpose);
+    if (return_code == ERROR) {
+        /* try to free memory */
+        free_2D_matrix(&new_H);
+    }
     return return_code;
 }
 
@@ -527,12 +553,12 @@ int symnmf_C(matrix H, matrix W, int N, int k, matrix *result) {
     int i;
     int return_code = ERROR;
     double epsilon = exp(-4);
-    double beta = 0.5;
     matrix new_H = NULL;
 
     for (i = 0; i < MAX_ITERATIONS; i++) {
-        /* update H */
+        GOTO_CLEANUP_IF_ERROR(update_H(H, W, N, k, &new_H));
         /* check for convergence */
+        (void)epsilon;
     }
 
     return_code = SUCCESS;
