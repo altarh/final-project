@@ -14,4 +14,5 @@ int symnmf_C(matrix H, matrix W, int N, int k, matrix *result);
 #define GOTO_CLEANUP_IF_NEGATIVE(x) { if ((x) < 0) { goto cleanup; } }
 #define GOTO_CLEANUP_IF_PYERROR_OCCURED() { if (NULL != PyErr_Occurred()) { goto cleanup; } }
 
-void free_2D_matrix(matrix array);
+int init_matrix(matrix *m, int N, int M);
+void free_2D_matrix(matrix *array);

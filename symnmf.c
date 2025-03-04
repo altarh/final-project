@@ -53,6 +53,31 @@ int init_coord(coord **c, double n) {
     return SUCCESS;
 }
 
+/* initializes 2D matrix of N rows and M columns with zeroes */
+int init_matrix(matrix *m, int N, int M) {
+    int i;
+    int return_code = ERROR;
+    double *arr = calloc(N * M, sizeof(double));
+    matrix mat = calloc(N, sizeof(double *));
+
+    GOTO_CLEANUP_IF_NULL(arr);
+    GOTO_CLEANUP_IF_NULL(mat);
+
+    for (i = 0; i < N; i++) {
+        mat[i] = arr + i * M;
+    }
+
+    return_code = SUCCESS;
+    *m = mat;
+
+cleanup:
+    if (return_code == ERROR) {
+        /* try to free memory */
+        free_2D_matrix(&mat);
+    }
+    return return_code;
+}
+
 /**
  * Reads a file and parses it into a linked list of datapoints.
  *
@@ -128,16 +153,18 @@ void free_datapoints_structs(datapoint *datapoints) {
     }
 }
 
-void free_2D_matrix(matrix m) {
-    if (m != NULL) {
-        free(m[0]);
-        free(m);
+void free_2D_matrix(matrix *m) {
+    if (*m != NULL) {
+        free(*m[0]);
+        free(*m);
+        *m = NULL;
     }
 }
 
-void free_1D_array(double *array) {
-    if (array != NULL) {
-        free(array);
+void free_1D_array(double **array) {
+    if (*array != NULL) {
+        free(*array);
+        *array = NULL;
     }
 }
 
@@ -155,32 +182,27 @@ int linked_list_to_2D_matrix(datapoint *point, int N, int d, matrix *result) {
     int i;
     int j;
     int return_code = ERROR;
-    double *p = NULL;
-    matrix a = NULL;
+    matrix m = NULL;
     coord *coord1 = NULL;
 
-    p = calloc(d * N, sizeof(double));
-    GOTO_CLEANUP_IF_NULL(p);
-    a = calloc(N, sizeof(double *));
-    GOTO_CLEANUP_IF_NULL(a);
+    GOTO_CLEANUP_IF_ERROR(init_matrix(&m, N, d));
 
     for (i = 0; i < N; i++) {
         coord1 = point->coords;
-        a[i] = p + (i * d);
         for (j = 0; j < d; j++) {
-            a[i][j] = coord1->coord;
+            m[i][j] = coord1->coord;
             coord1 = coord1->next;
         }
         point = point->next;
     }
 
     return_code = SUCCESS;
-    *result = a;
+    *result = m;
 
 cleanup:
     if (return_code == ERROR) {
         /* try to free memory */
-        free_2D_matrix(a);
+        free_2D_matrix(&m);
     }
     return return_code;
 }
@@ -234,19 +256,15 @@ int sym_C(matrix datapoint_coords, int N, int d, matrix *result) {
     int i;
     int j;
     int return_code = ERROR;
-    double *arr = malloc(N * N * sizeof(double));
-    matrix A = malloc(N * sizeof(double *));
+    matrix A = NULL;
 
-    GOTO_CLEANUP_IF_NULL(arr);
-    GOTO_CLEANUP_IF_NULL(A);
+    GOTO_CLEANUP_IF_ERROR(init_matrix(&A, N, N));
 
     for (i = 0; i < N; i++) {
-        A[i] = arr + (i * N);
-        A[i][i] = 0;
-        for (j = i + 1; j < N; j++) {
+        for (j = i + 1; j < N; j++) {  /* diagonal initialized already to 0 */
             double dist = calc_squared_euclidean_distance(datapoint_coords[i], datapoint_coords[j], d);
             A[i][j] = exp(-dist / 2);
-            arr[(j * N) + i] = A[i][j]; /* symmetry between A[j][i] (=arr[(j * N) + i]) and A[i][j] */
+            A[j][i] = A[i][j];  /* symmetry between A[j][i] and A[i][j] */
         }
     }
 
@@ -256,7 +274,7 @@ int sym_C(matrix datapoint_coords, int N, int d, matrix *result) {
 cleanup:
     if (return_code == ERROR) {
         /* try to free memory */
-        free_2D_matrix(A);
+        free_2D_matrix(&A);
     }
     return return_code;
 }
@@ -275,7 +293,7 @@ int _calc_diag(matrix A, int N, matrix result) {
     int i;
     int j;
     double d;
-    double *diag = malloc(N * sizeof(double));
+    double *diag = calloc(N, sizeof(double));
 
     GOTO_CLEANUP_IF_NULL(diag);
 
@@ -293,7 +311,7 @@ int _calc_diag(matrix A, int N, matrix result) {
 cleanup:
     if (return_code == ERROR) {
         /* try to free memory */
-        free_1D_array(diag);
+        free_1D_array(&diag);
     }
     return return_code;
 }
@@ -311,15 +329,12 @@ int _ddg(matrix A, int N, matrix *result) {
     int i;
     int return_code = ERROR;
     double *diag = NULL;
-    double *arr = calloc(N * N, sizeof(double));
-    matrix D = malloc(N * sizeof(double *));
+    matrix D = NULL;
 
-    GOTO_CLEANUP_IF_NULL(arr);
-    GOTO_CLEANUP_IF_NULL(D);
+    GOTO_CLEANUP_IF_ERROR(init_matrix(&D, N, N));  /* initialized with zeroes */
     GOTO_CLEANUP_IF_ERROR(_calc_diag(A, N, &diag));
 
     for (i = 0; i < N; i++) {
-        D[i] = arr + i * N;
         D[i][i] = diag[i];
     }
 
@@ -327,10 +342,10 @@ int _ddg(matrix A, int N, matrix *result) {
     *result = D;
 
 cleanup:
-    free_1D_array(diag);
+    free_1D_array(&diag);
     if (return_code == ERROR) {
         /* try to free memory */
-        free_2D_matrix(D);
+        free_2D_matrix(&D);
     }
     return return_code;
 }
@@ -357,10 +372,10 @@ int ddg_C(matrix datapoint_coords, int N, int d, matrix *result) {
     *result = D;
 
 cleanup:
-    free_2D_matrix(A);
+    free_2D_matrix(&A);
     if (return_code == ERROR) {
         /* try to free memory */
-        free_2D_matrix(D);
+        free_2D_matrix(&D);
     }
     return return_code;
 }
@@ -394,21 +409,18 @@ int norm_C(matrix datapoint_coords, int N, int d, matrix *result) {
     int j;
     matrix A = NULL;
     double *diag = NULL;
-    double *arr = calloc(N * N, sizeof(double));
-    matrix W = calloc(N, sizeof(double *));
+    matrix W = NULL;
 
-    GOTO_CLEANUP_IF_NULL(arr);
-    GOTO_CLEANUP_IF_NULL(W);
+    GOTO_CLEANUP_IF_ERROR(init_matrix(&W, N, N));
     GOTO_CLEANUP_IF_ERROR(sym_C(datapoint_coords, N, d, &A));
     GOTO_CLEANUP_IF_ERROR(_calc_diag(A, N, &diag)); /* calculating with diag array instead of matrix, for efficiency */
     _calc_diag_pow(diag, N);
 
     for (i = 0; i < N; i++) {
-        W[i] = arr + i * N;
         /* not setting the diagonal of W as it is always 0 */
         for (j = i; j < N; j++) {
             W[i][j] = A[i][j] * diag[i] * diag[j]; /* multiplication of the matrixes */
-            arr[(j * N) + i] = W[i][j];              /* symmetry between A[j][i] (=arr[(j * N) + i]) and A[i][j] */
+            W[j][i] = W[i][j];                     /* symmetry between W[j][i] and W[i][j] */
         }
     }
 
@@ -416,11 +428,11 @@ int norm_C(matrix datapoint_coords, int N, int d, matrix *result) {
     *result = W;
 
 cleanup:
-    free_2D_matrix(A);
-    free_1D_array(diag);
+    free_2D_matrix(&A);
+    free_1D_array(&diag);
     if (return_code == ERROR) {
         /* try to free memory */
-        free_2D_matrix(W);
+        free_2D_matrix(&W);
     }
     return return_code;
 }
@@ -435,19 +447,16 @@ cleanup:
  *
  * @return SUCCESS if the multiplication was successful, ERROR otherwise.
  */
-int mat_dot(double** A, double** B, int N, matrix *result) {
+int mat_dot(matrix A, matrix B, int N, matrix *result) {
     int i;
     int j;
     int k;
     int return_code = ERROR;
-    double* arr = calloc(N*N, sizeof(double));
-    double** mat = malloc(N*sizeof(double*));
+    matrix mat = NULL;
 
-    GOTO_CLEANUP_IF_NULL(arr);
-    GOTO_CLEANUP_IF_NULL(mat);
+    GOTO_CLEANUP_IF_ERROR(init_matrix(&mat, N, N));
 
     for (i=0; i<N; i++) {
-        mat[i] = arr + (i*N);
         for (j=0; j<N; j++) {
             for (k=0; k<N; k++) {
                 mat[i][j] += A[i][k] * B[k][j];
@@ -461,7 +470,7 @@ int mat_dot(double** A, double** B, int N, matrix *result) {
 cleanup:
     if (return_code == ERROR) {
         /* try to free memory */
-        free_2D_matrix(mat);
+        free_2D_matrix(&mat);
     }
     return return_code;
 }
@@ -475,31 +484,28 @@ cleanup:
  *
  * @return SUCCESS if the multiplication was successful, ERROR otherwise.
  */
-int transpose(double** mat, int N, matrix *result) {
+int transpose(matrix mat, int N, matrix *result) {
     int i;
     int j;
     int k;
     int return_code = ERROR;
-    double* arr = calloc(N*N, sizeof(double));
-    double** mat = malloc(N*sizeof(double*));
+    matrix mat_transpose = NULL;
 
-    GOTO_CLEANUP_IF_NULL(arr);
-    GOTO_CLEANUP_IF_NULL(mat);
+    GOTO_CLEANUP_IF_ERROR(init_matrix(&mat_transpose, N, N));
 
     for (i=0; i<N; i++) {
-        mat[i] = arr + (i*N);
         for (j=0; j<N; j++) {
-            mat[i][j] = mat[j][i];
+            mat_transpose[i][j] = mat[j][i];
         }
     }
 
     return_code = SUCCESS;
-    *result = mat;
+    *result = mat_transpose;
 
 cleanup:
     if (return_code == ERROR) {
         /* try to free memory */
-        free_2D_matrix(mat);
+        free_2D_matrix(&mat);
     }
     return return_code;
 }
@@ -588,8 +594,8 @@ int main(int argc, char *argv[]) {
     print_mat(result, N);
 
 cleanup:
-    free_2D_matrix(datapoints);
-    free_2D_matrix(result);
+    free_2D_matrix(&datapoints);
+    free_2D_matrix(&result);
     if (return_code == ERROR) {
         printf("%s", GENERIC_ERROR_MSG);
     }
