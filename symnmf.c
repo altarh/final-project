@@ -243,6 +243,19 @@ double calc_squared_euclidean_distance(double *coord1, double *coord2, int d) {
     return sum;
 }
 
+double calc_squared_frobenius_norm(matrix A, int num_rows, int num_cols) {
+    int i;
+    int j;
+    double sum = 0;
+
+    for (i = 0; i < num_rows; i++) {
+        for (j = 0; j < num_cols; j++) {
+            sum += pow(A[i][j], 2);
+        }
+    }
+    return sum;
+}
+
 /**
  * Calculates the similarity matrix A.
  *
@@ -552,16 +565,48 @@ cleanup:
     return return_code;
 }
 
+int calculate_distance(matrix prev_H, matrix new_H, int N, int k, double *result) {
+    int i;
+    int j;
+    double frobenius_norm;
+    int return_code = ERROR;
+    matrix diff = NULL;
+
+    GOTO_CLEANUP_IF_ERROR(init_matrix(&diff, N, k));
+
+    for (i = 0; i < N; i++) {
+        for (j = 0; j < k; j++) {
+            diff[i][j] = new_H[i][j] - prev_H[i][j];
+        }
+    }
+
+    frobenius_norm = calc_squared_frobenius_norm(diff, N, k);
+
+    return_code = SUCCESS;
+    *result = frobenius_norm;
+
+cleanup:
+    free_2D_matrix(&diff);
+    return return_code;
+}
+
 int symnmf_C(matrix H, matrix W, int N, int k, matrix *result) {
     int i;
     int return_code = ERROR;
-    double epsilon = exp(-4);
+    double distance = 0;
+    const double EPSILON = exp(-4);
     matrix new_H = NULL;
 
     for (i = 0; i < MAX_ITERATIONS; i++) {
         GOTO_CLEANUP_IF_ERROR(update_H(H, W, N, k, &new_H));
         /* check for convergence */
-        (void)epsilon;
+        GOTO_CLEANUP_IF_ERROR(calculate_distance(H, new_H, N, k, &distance));
+        free_2D_matrix(&H);
+        H = new_H;
+
+        if (distance < EPSILON) {
+            break;
+        }
     }
 
     return_code = SUCCESS;
