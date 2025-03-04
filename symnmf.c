@@ -527,6 +527,15 @@ cleanup:
     return return_code;
 }
 
+/**
+ * Performs a single iteration of updating the decomposition matrix H.
+ *
+ * @param H The current decomposition matrix, of size N x k.
+ * @param W The normalized similarity matrix, of size N x N.
+ * @param result The resulting updated decomposition matrix H.
+ *
+ * @return SUCCESS if the calculation was successful, ERROR otherwise.
+ */
 int update_H(matrix H, matrix W, int N, int k, matrix *result) {
     int i;
     int j;
@@ -547,7 +556,6 @@ int update_H(matrix H, matrix W, int N, int k, matrix *result) {
         for (j = 0; j < k; j++) {
             new_H[i][j] = H[i][j] * (1 - BETA + (BETA * (numerator[i][j] / denumerator[i][j])));
         }
-        
     }
 
     return_code = SUCCESS;
@@ -565,6 +573,17 @@ cleanup:
     return return_code;
 }
 
+/**
+ * Calculates distance between two matrices (prev_H and new_H) using the Frobenius norm, to check for convergence.
+ *
+ * @param prev_H The previous decomposition matrix H.
+ * @param new_H The new decomposition matrix H.
+ * @param N The number of rows in H.
+ * @param k The number of columns in H.
+ * @param result The resulting distance between prev_H and new_H.
+ *
+ * @return SUCCESS if the calculation was successful, ERROR otherwise.
+ */
 int calculate_distance(matrix prev_H, matrix new_H, int N, int k, double *result) {
     int i;
     int j;
@@ -590,6 +609,16 @@ cleanup:
     return return_code;
 }
 
+/**
+ * Given initial decomposition matrix H and normalized similarity matrix W,
+ * Update H until max iteration or convergence.
+ *
+ * @param H The initial decomposition matrix, of size N x k.
+ * @param W The normalized similarity matrix, of size N x N.
+ * @param result The resulting decomposition matrix H.
+ *
+ * @return SUCCESS if the calculation was successful, ERROR otherwise.
+ */
 int symnmf_C(matrix H, matrix W, int N, int k, matrix *result) {
     int i;
     int return_code = ERROR;
