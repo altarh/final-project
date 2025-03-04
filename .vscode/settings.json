@@ -1,5 +1,5 @@
 {
-    "C_Cpp.clang_format_style": "{ BasedOnStyle: LLVM, IndentWidth: 4, UseTab: Never, BraceWrapping: { AfterFunction: false, AfterControlStatement: false } }",
+    "C_Cpp.clang_format_style": "{ BasedOnStyle: LLVM, IndentWidth: 4, UseTab: Never, ColumnLimit: 120, BraceWrapping: { AfterFunction: false, AfterControlStatement: false, BeforeElse: true } }",
     "files.associations": {
         "symnmf.h": "c"
     }
