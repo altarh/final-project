@@ -1,6 +1,6 @@
 import sys
 
-EPSILON = 0.001
+EPSILON = 1e-4
 DEFAULT_ITER = 300
 
 GENERIC_ERROR_MSG = "An Error Has Occurred"
