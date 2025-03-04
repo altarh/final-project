@@ -202,15 +202,15 @@ cleanup:
     return return_code;
 }
 
-/* Calculates the Euclidean distance between two points in d-dimensional space.  */
-double calc_euclidean_distance(double *coord1, double *coord2, int d){
+/* Calculates the squared Euclidean distance between two points in d-dimensional space.  */
+double calc_squared_euclidean_distance(double *coord1, double *coord2, int d){
     double sum = 0;
     int i;
 
     for (i = 0; i < d; i++){
         sum += pow((coord1[i] - coord2[i]), 2);
     }
-    return sqrt(sum);
+    return sum;
 }
 
 /**
@@ -240,7 +240,7 @@ int sym_C(double** datapoint_coords, int N, int d, double ***result) {
                 A[i][j] = 0;
             }
             else {
-                double dist = calc_euclidean_distance(datapoint_coords[i], datapoint_coords[j], d);
+                double dist = calc_squared_euclidean_distance(datapoint_coords[i], datapoint_coords[j], d);
                 A[i][j] = exp(-dist/2);
             }
         }
