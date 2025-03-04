@@ -269,18 +269,18 @@ cleanup:
  *
  * @return SUCCESS if the calculation was successful, ERROR otherwise.
  */
-int _calc_diag(double** A, int N, double **result) {
+int _calc_diag(double **A, int N, double **result) {
     int return_code = ERROR;
     int i;
     int j;
     double d;
-    double* diag = malloc(N*sizeof(double));
+    double *diag = malloc(N * sizeof(double));
 
     GOTO_CLEANUP_IF_NULL(diag);
 
-    for (i=0; i<N; i++) {
+    for (i = 0; i < N; i++) {
         d = 0;
-        for (j=0; j<N; j++) {
+        for (j = 0; j < N; j++) {
             d += A[i][j];
         }
         diag[i] = d;
@@ -311,14 +311,14 @@ int _ddg(double **A, int N, double ***result) {
     int return_code = ERROR;
     double *arr = calloc(N * N, sizeof(double));
     double **D = malloc(N * sizeof(double *));
-    double* diag = NULL;
+    double *diag = NULL;
 
     GOTO_CLEANUP_IF_NULL(arr);
     GOTO_CLEANUP_IF_NULL(D);
     GOTO_CLEANUP_IF_ERROR(_calc_diag(A, N, &diag));
 
-    for (i=0; i<N; i++) {
-        D[i] = arr + i*N;
+    for (i = 0; i < N; i++) {
+        D[i] = arr + i * N;
         D[i][i] = diag[i];
     }
 
@@ -370,7 +370,7 @@ cleanup:
  * @param diag The degrees array.
  * @param N The length of diag.
  */
-int _calc_diag_pow(double* diag, int N) {
+int _calc_diag_pow(double *diag, int N) {
     int i;
 
     for (i = 0; i < N; i++) {
@@ -392,10 +392,10 @@ int norm_C(double **datapoint_coords, int N, int d, double ***result) {
     int return_code = ERROR;
     int i;
     int j;
-    double** A = NULL;
-    double* diag = NULL;
-    double* arr = malloc(N*N*sizeof(double));
-    double** W = malloc(N*sizeof(double*));
+    double **A = NULL;
+    double *diag = NULL;
+    double *arr = malloc(N * N * sizeof(double));
+    double **W = malloc(N * sizeof(double *));
 
     GOTO_CLEANUP_IF_NULL(arr);
     GOTO_CLEANUP_IF_NULL(W);
@@ -403,9 +403,9 @@ int norm_C(double **datapoint_coords, int N, int d, double ***result) {
     GOTO_CLEANUP_IF_ERROR(_calc_diag(A, N, &diag));
     GOTO_CLEANUP_IF_ERROR(_calc_diag_pow(diag, N));
 
-    for (i=0; i<N; i++) {
-        W[i] = arr + i*N;
-        for (j=i+1; j<N; j++) {
+    for (i = 0; i < N; i++) {
+        W[i] = arr + i * N;
+        for (j = i + 1; j < N; j++) {
             W[i][j] = A[i][j] * diag[i] * diag[j];
             arr[j*N+i] = W[i][j]; /* symmetry between A[j][i] (=arr[j*N+i]) and A[i][j] */
         }
