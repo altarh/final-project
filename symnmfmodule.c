@@ -63,7 +63,7 @@ int get_datapoints(int N, int d, PyObject *datapoints, double ***datapoints_arra
 cleanup:
     if (return_code == ERROR) {
         /* try to free memory */
-        free_2D_array(a);
+        free_2D_matrix(a);
     }
     return return_code;
 }
@@ -133,8 +133,8 @@ static PyObject *call_handler(PyObject *self, PyObject *args, handler handler_fu
     GOTO_CLEANUP_IF_ERROR(build_output_matrix(N, result, &matrix_result));
 
 cleanup:
-    free_2D_array(datapoints);
-    free_2D_array(result);
+    free_2D_matrix(datapoints);
+    free_2D_matrix(result);
     return matrix_result;
 }
 
