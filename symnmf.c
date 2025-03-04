@@ -244,7 +244,7 @@ int sym_C(double **datapoint_coords, int N, int d, double ***result) {
         for (j = i + 1; j < N; j++) {
             double dist = calc_squared_euclidean_distance(datapoint_coords[i], datapoint_coords[j], d);
             A[i][j] = exp(-dist / 2);
-            arr[j*N+i] = A[i][j]; /* symmetry between A[j][i] (=arr[j*N+i]) and A[i][j] */
+            arr[(j * N) + i] = A[i][j]; /* symmetry between A[j][i] (=arr[(j * N) + i]) and A[i][j] */
         }
     }
 
@@ -398,15 +398,15 @@ int norm_C(double **datapoint_coords, int N, int d, double ***result) {
     GOTO_CLEANUP_IF_NULL(arr);
     GOTO_CLEANUP_IF_NULL(W);
     GOTO_CLEANUP_IF_ERROR(sym_C(datapoint_coords, N, d, &A));
-    GOTO_CLEANUP_IF_ERROR(_calc_diag(A, N, &diag));
+    GOTO_CLEANUP_IF_ERROR(_calc_diag(A, N, &diag)); /* calculating with diag array instead of matrix, for efficiency */
     _calc_diag_pow(diag, N);
 
     for (i = 0; i < N; i++) {
         W[i] = arr + i * N;
         /* not setting the diagonal of W as it is always 0 */
         for (j = i; j < N; j++) {
-            W[i][j] = A[i][j] * diag[i] * diag[j];
-            arr[j*N+i] = W[i][j]; /* symmetry between A[j][i] (=arr[j*N+i]) and A[i][j] */
+            W[i][j] = A[i][j] * diag[i] * diag[j]; /* multiplication of the matrixes */
+            arr[(j * N) + i] = W[i][j];              /* symmetry between A[j][i] (=arr[(j * N) + i]) and A[i][j] */
         }
     }
 
