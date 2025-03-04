@@ -620,22 +620,20 @@ cleanup:
  * @return SUCCESS if the calculation was successful, ERROR otherwise.
  */
 int symnmf_C(matrix H, matrix W, int N, int k, matrix *result) {
+    const double EPSILON = exp(-4);
+
     int i;
     int return_code = ERROR;
-    double distance = 0;
-    const double EPSILON = exp(-4);
+    double distance = EPSILON;  /* init as epsilon to allow first iteration */
     matrix new_H = NULL;
 
-    for (i = 0; i < MAX_ITERATIONS; i++) {
+    for (i = 0; i < MAX_ITERATIONS && distance >= EPSILON; i++) {
         GOTO_CLEANUP_IF_ERROR(update_H(H, W, N, k, &new_H));
-        /* check for convergence */
+
+        /* update distance to check for convergence */
         GOTO_CLEANUP_IF_ERROR(calculate_distance(H, new_H, N, k, &distance));
         free_2D_matrix(&H);
         H = new_H;
-
-        if (distance < EPSILON) {
-            break;
-        }
     }
 
     return_code = SUCCESS;
