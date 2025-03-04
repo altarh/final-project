@@ -439,7 +439,8 @@ cleanup:
 }
 
 /**
- * Computes the matrix multiplication of two N x N matrices A and B.
+ * Computes the matrix multiplication of two matrices A and B.
+ * Expecting amount of rows in B to be equal to amount of columns in A.
  *
  * @param A The first matrix in the multiplication.
  * @param B The second matrix in the multiplication.
@@ -448,18 +449,20 @@ cleanup:
  *
  * @return SUCCESS if the multiplication was successful, ERROR otherwise.
  */
-int mat_dot(matrix A, matrix B, int N, matrix *result) {
+int mat_dot(matrix A, matrix B, int A_nrows, int A_ncols, int B_ncols, matrix *result) {
     int i;
     int j;
     int k;
     int return_code = ERROR;
+    int new_nrows = A_nrows;
+    int new_ncols = B_ncols;
     matrix mat = NULL;
 
-    GOTO_CLEANUP_IF_ERROR(init_matrix(&mat, N, N));
+    GOTO_CLEANUP_IF_ERROR(init_matrix(&mat, new_nrows, new_ncols));
 
-    for (i=0; i<N; i++) {
-        for (j=0; j<N; j++) {
-            for (k=0; k<N; k++) {
+    for (i = 0; i < new_nrows; i++) {
+        for (j = 0; j < new_ncols; j++) {
+            for (k = 0; k < A_ncols; k++) {
                 mat[i][j] += A[i][k] * B[k][j];
             }
         }
@@ -522,10 +525,10 @@ int update_H(matrix H, matrix W, int N, int k, matrix *result) {
     matrix new_H = NULL;
 
     GOTO_CLEANUP_IF_ERROR(init_matrix(&new_H, N, k));
-    GOTO_CLEANUP_IF_ERROR(mat_dot(W, H, N, &numerator));  /* TODO H is size n X k */
+    GOTO_CLEANUP_IF_ERROR(mat_dot(W, H, N, N, k, &numerator));  /* TODO H is size n X k */
     GOTO_CLEANUP_IF_ERROR(transpose(H, N, k, &H_transpose));
-    GOTO_CLEANUP_IF_ERROR(mat_dot(H, H_transpose, N, &temp));
-    GOTO_CLEANUP_IF_ERROR(mat_dot(temp, H, N, &denumerator));
+    GOTO_CLEANUP_IF_ERROR(mat_dot(H, H_transpose, N, k, N, &temp));  /* temp is size n X n */
+    GOTO_CLEANUP_IF_ERROR(mat_dot(temp, H, N, N, k, &denumerator));
 
     for (i = 0; i < N; i++) {
         for (j = 0; j < k; j++) {
