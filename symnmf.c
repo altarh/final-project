@@ -130,7 +130,6 @@ void free_2D_array(double **array) {
     if (array != NULL) {
         free(array[0]);
         free(array);
-        array = NULL;
     }
 }
 
@@ -309,9 +308,9 @@ cleanup:
 int _ddg(double **A, int N, double ***result) {
     int i;
     int return_code = ERROR;
+    double *diag = NULL;
     double *arr = calloc(N * N, sizeof(double));
     double **D = malloc(N * sizeof(double *));
-    double *diag = NULL;
 
     GOTO_CLEANUP_IF_NULL(arr);
     GOTO_CLEANUP_IF_NULL(D);
@@ -370,9 +369,8 @@ cleanup:
  * @param diag The degrees array.
  * @param N The length of diag.
  */
-int _calc_diag_pow(double *diag, int N) {
+void _calc_diag_pow(double *diag, int N) {
     int i;
-
     for (i = 0; i < N; i++) {
         diag[i] = pow(diag[i], -0.5);
     }
@@ -401,7 +399,7 @@ int norm_C(double **datapoint_coords, int N, int d, double ***result) {
     GOTO_CLEANUP_IF_NULL(W);
     GOTO_CLEANUP_IF_ERROR(sym_C(datapoint_coords, N, d, &A));
     GOTO_CLEANUP_IF_ERROR(_calc_diag(A, N, &diag));
-    GOTO_CLEANUP_IF_ERROR(_calc_diag_pow(diag, N));
+    _calc_diag_pow(diag, N);
 
     for (i = 0; i < N; i++) {
         W[i] = arr + i * N;
