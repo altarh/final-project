@@ -79,6 +79,52 @@ cleanup:
     return return_code;
 }
 
+
+/**
+ * Parses a single line (datapoint) from file into a linked list of datapoints.
+ *
+ * @param filename The name of the file to read.
+ * @param N The calculated number of datapoints in the linked list.
+ * @param curr_datapoints The last element in the linked list.
+ * @param file_status The result of fscanf.
+ *
+ * @return SUCCESS if the line was parsed successfully, ERROR otherwise.
+ */
+int parse_line(FILE *file, int *N, datapoint ***curr_datapoint, int *file_status) {
+    int return_code = ERROR;
+    double n;   /* for the double values */
+    char delim;
+    coord *first_coord = NULL;
+    coord **curr_coord = &first_coord;
+
+    do {
+        (*file_status) = fscanf(file, "%lf%c", &n, &delim);
+        if ((*file_status) != 2) { /* if last line was already read */
+            return_code = SUCCESS;
+            goto cleanup;
+        }
+        GOTO_CLEANUP_IF_ERROR(init_coord(curr_coord, n));
+        curr_coord = &(*curr_coord)->next;
+    } while (delim != '\n');
+
+    GOTO_CLEANUP_IF_ERROR(init_datapoint(*curr_datapoint, first_coord));
+    (*curr_datapoint) = &(**curr_datapoint)->next; /* add first point to datapoint linked list */
+    (*N)++;
+
+    return_code = SUCCESS;
+
+cleanup:
+    return return_code;
+}
+
+/* Calculates the dimension of the datapoints using given datapoint coordinates. */
+void count_d(coord *curr_coord, int *d) {
+    while (curr_coord != NULL) {
+        (*d)++;
+        curr_coord = curr_coord->next;
+    }
+}
+
 /**
  * Reads a file and parses it into a linked list of datapoints.
  *
@@ -91,36 +137,18 @@ cleanup:
  */
 int parse_file(const char *filename, int *d, int *N, datapoint **datapoints) {
     int return_code = ERROR;
-    double n;   /* for the double values */
-    char delim; /* commas, \n, ... */
     datapoint **curr_datapoint = datapoints;
-    coord *first_coord = NULL;
-    coord **curr_coord = &first_coord;
+    coord *curr_coord = NULL;
+    int file_status;
 
     FILE *file = fopen(filename, "r");
     GOTO_CLEANUP_IF_NULL(file);
 
-    do { /* reading the first line of the file to extract d */
-        fscanf(file, "%lf%c", &n, &delim);
-        GOTO_CLEANUP_IF_ERROR(init_coord(curr_coord, n));
-        curr_coord = &(*curr_coord)->next;
-        (*d)++; /* counting number of coordinates */
-    } while (delim != '\n');
+    GOTO_CLEANUP_IF_ERROR(parse_line(file, N, &curr_datapoint, &file_status));
+    count_d((*datapoints)->coords, d);
 
-    GOTO_CLEANUP_IF_ERROR(init_datapoint(curr_datapoint, first_coord));
-    curr_datapoint = &(*curr_datapoint)->next; /* add first point to datapoint linked list */
-    (*N)++;
-
-    curr_coord = &first_coord;                                                  /* reset coordinates linked list */
-    while (fscanf(file, "%lf%c", &n, &delim) == 2) {                            /* reading the rest of the file */
-        GOTO_CLEANUP_IF_ERROR(init_coord(curr_coord, n));                       /* init coordinate */
-        curr_coord = &(*curr_coord)->next;                                      /* add to coordinates linked list */
-        if (delim == '\n') {                                                    /* if at the end of the line */
-            GOTO_CLEANUP_IF_ERROR(init_datapoint(curr_datapoint, first_coord)); /* init datapoint */
-            curr_datapoint = &(*curr_datapoint)->next;                          /* add it to the linked list */
-            curr_coord = &first_coord; /* reset coordinates linked list for next datapoint */
-            (*N)++;                    /* counting number of datapoints */
-        }
+    while (file_status == 2) {                            /* reading the rest of the file */
+        GOTO_CLEANUP_IF_ERROR(parse_line(file, N, &curr_datapoint, &file_status));
     }
 
     return_code = SUCCESS;
