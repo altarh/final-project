@@ -154,7 +154,7 @@ static PyObject *symnmf(PyObject *self, PyObject *args) {
     GOTO_CLEANUP_IF_ERROR(build_output_matrix(N, k, result, &matrix_result));
 
 cleanup:
-    free_2D_matrix(&H);
+    /* H is freed in symnmf_C */
     free_2D_matrix(&W);
     free_2D_matrix(&result);
     return matrix_result;

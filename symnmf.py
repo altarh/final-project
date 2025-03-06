@@ -67,7 +67,7 @@ def main():
         result = symnmfmodule.norm(datapoints)
     elif goal == "symnmf":
         W = symnmfmodule.norm(datapoints)
-        H0 = initialize_H(W, N, k)
+        H0 = initialize_H(W, N, k).tolist()
         # result = symnmf(H0, W)
         result = symnmfmodule.symnmf(H0, W)
     else: # invalid goal
