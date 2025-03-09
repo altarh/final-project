@@ -138,7 +138,6 @@ void count_d(coord *curr_coord, int *d) {
 int parse_file(const char *filename, int *d, int *N, datapoint **datapoints) {
     int return_code = ERROR;
     datapoint **curr_datapoint = datapoints;
-    coord *curr_coord = NULL;
     int file_status;
 
     FILE *file = fopen(filename, "r");
@@ -648,7 +647,7 @@ cleanup:
  * @return SUCCESS if the calculation was successful, ERROR otherwise.
  */
 int symnmf_C(matrix H, matrix W, int N, int k, matrix *result) {
-    const double EPSILON = exp(-4);
+    const double EPSILON = 1e-4;
 
     int i;
     int return_code = ERROR;
