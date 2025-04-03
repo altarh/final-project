@@ -35,6 +35,9 @@ PyMODINIT_FUNC PyInit_symnmfmodule(void) {
     return m;
 }
 
+/**
+ * Get content from 2D python list into a 2D matrix, given number of rows and columns.
+ */
 int get_matrix_content(int num_rows, int num_cols, PyObject *obj, matrix *result) {
     int return_code = ERROR;
     int i;
@@ -65,6 +68,16 @@ cleanup:
     return return_code;
 }
 
+/**
+ * Reads a 2D python list and parses its contents into a 2D matrix.
+ *
+ * @param obj The python object to obtain data from.
+ * @param num_rows A pointer to the number of rows in the matrix.
+ * @param num_cols A pointer to the number of columns in the matrix.
+ * @param result A pointer to the resulting 2D matrix.
+ *
+ * @return SUCCESS if the parsing was successful, ERROR otherwise.
+ */
 int parse_2D_matrix(PyObject *obj, int *num_rows, int *num_cols, matrix *result) {
     int return_code = ERROR;
     PyObject *row = NULL;
@@ -85,6 +98,16 @@ cleanup:
     return return_code;
 }
 
+/**
+ * Builds a python list of lists from a 2D matrix.
+ *
+ * @param num_rows The number of rows in the matrix.
+ * @param num_cols The number of columns in the matrix.
+ * @param m The 2D matrix to build the python list from.
+ * @param result A pointer to the resulting python list.
+ *
+ * @return SUCCESS if the construction was successful, ERROR otherwise.
+ */
 int build_output_matrix(int num_rows, int num_cols, matrix m, PyObject **result) {
     int return_code = ERROR;
     PyObject *output = NULL;
@@ -113,7 +136,11 @@ cleanup:
     return return_code;
 }
 
-static PyObject *call_handler(PyObject *self, PyObject *args, handler handler_func) {
+/**
+ * Generic helper function which calls a handler function with datapoints and its dimensions after parsing a 2D matrix object, 
+ * and builds a python matrix from the result.
+ */
+static PyObject *call_handler(PyObject *args, handler handler_func) {
     int N;
     int d;
     matrix datapoints = NULL;
@@ -135,6 +162,9 @@ cleanup:
     return matrix_result;
 }
 
+/**
+ * Wrapper function for python API which calls symnmf_C and builds a python matrix from the result.
+ */
 static PyObject *symnmf(PyObject *self, PyObject *args) {
     int N;
     int k;
@@ -159,14 +189,24 @@ cleanup:
     free_2D_matrix(&result);
     return matrix_result;
 }
+
+/**
+ * Wrapper function for python API which calls sym_C.
+ */
 static PyObject *sym(PyObject *self, PyObject *args) {
-    return call_handler(self, args, sym_C);
+    return call_handler(args, sym_C);
 }
 
+/**
+ * Wrapper function for python API which calls ddg_C.
+ */
 static PyObject *ddg(PyObject *self, PyObject *args) {
-    return call_handler(self, args, ddg_C);
+    return call_handler(args, ddg_C);
 }
 
+/**
+ * Wrapper function for python API which calls norm_C.
+ */
 static PyObject *norm(PyObject *self, PyObject *args) {
-    return call_handler(self, args, norm_C);
+    return call_handler(args, norm_C);
 }
