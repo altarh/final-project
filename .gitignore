@@ -4,3 +4,7 @@ symnmf
 
 # c api package
 symnmfmodule.cpython*
+
+# tests
+project-tests-v*
+
