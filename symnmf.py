@@ -9,7 +9,7 @@ np.random.seed(1234)
 
 def print_error():
     '''Print an error message in case of an exception.'''
-    print("An Error Has Occured.")
+    print("An Error Has Occurred.")
 
 def initialize_H(W, N, k):
     '''Create initial decomposition matrix H.'''
