@@ -81,9 +81,8 @@ def main():
     symnmf_clustering = np.argmax(H, axis=1)  # computing each datapoint's label
     symnmf_silhouette_score = metrics.silhouette_score(datapoints, symnmf_clustering, metric='euclidean')
 
-    # printing comparison
-    print(f"nmf: {symnmf_silhouette_score}")
-    print(f"kmeans: {kmeans_silhouette_score}")
+    print(f"nmf: %.4f" %symnmf_silhouette_score)
+    print(f"kmeans: %.4f" %kmeans_silhouette_score)
 
 if __name__ == "__main__":
     try:

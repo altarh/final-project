@@ -9,7 +9,7 @@ np.random.seed(1234)
 
 def print_error():
     '''Print an error message in case of an exception.'''
-    print("An Error Has Occured.")
+    print("An Error Has Occurred")
 
 def initialize_H(W, N, k):
     '''Create initial decomposition matrix H.'''
@@ -56,9 +56,6 @@ def main():
     datapoints = load_datapoints(filename)
     N = len(datapoints)
 
-    if not 0 < k < N: # invalid k
-        raise Exception()
-
     if goal == "sym":
         result = symnmfmodule.sym(datapoints)
     elif goal == "ddg":
@@ -66,6 +63,9 @@ def main():
     elif goal == "norm":
         result = symnmfmodule.norm(datapoints)
     elif goal == "symnmf":
+        if not 0 < k < N: # invalid k
+            raise Exception()
+
         W = symnmfmodule.norm(datapoints)
         H0 = initialize_H(W, N, k).tolist()
         # result = symnmf(H0, W)
