@@ -434,16 +434,7 @@ void _calc_diag_pow(double *diag, int N) {
     }
 }
 
-/**
- * Calculates the normalized similarity matrix W.
- *
- * @param datapoint_coords A 2D matrix of the datapoint coordinates.
- * @param N The number of datapoints.
- * @param d The number of coordinates in each datapoint.
- * @param result The resulting normalized similarity matrix W.
- *
- * @return SUCCESS if the calculation was successful, ERROR otherwise.
- */
+/* Calculates the normalized similarity matrix W. */
 int norm_C(matrix datapoint_coords, int N, int d, matrix *result) {
     int return_code = ERROR;
     int i;
@@ -554,15 +545,7 @@ cleanup:
     return return_code;
 }
 
-/**
- * Performs a single iteration of updating the decomposition matrix H.
- *
- * @param H The current decomposition matrix, of size N x k.
- * @param W The normalized similarity matrix, of size N x N.
- * @param result The resulting updated decomposition matrix H.
- *
- * @return SUCCESS if the calculation was successful, ERROR otherwise.
- */
+/* Performs a single iteration of updating the decomposition matrix H. */
 int update_H(matrix H, matrix W, int N, int k, matrix *result) {
     int i;
     int j;
@@ -699,10 +682,8 @@ int main(int argc, char *argv[]) {
     if (argc != 3) {
         goto cleanup;
     }
-
     goal = argv[1];
     filename = argv[2];
-
     GOTO_CLEANUP_IF_ERROR(parse(filename, &d, &N, &datapoints));
 
     if (strcmp(goal, "sym") == 0) {
