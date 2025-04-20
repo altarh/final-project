@@ -63,7 +63,7 @@ def main():
     elif goal == "norm":
         result = symnmfmodule.norm(datapoints)
     elif goal == "symnmf":
-        if not 0 < k < N: # invalid k
+        if not 1 < k < N: # invalid k
             raise Exception()
 
         W = symnmfmodule.norm(datapoints)
